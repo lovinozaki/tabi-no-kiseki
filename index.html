@@ -13,7 +13,7 @@
 .actions{display:flex;gap:8px}.layerMenu{position:fixed;top:62px;right:12px;z-index:550;background:rgba(255,255,255,.97);backdrop-filter:blur(12px);border-radius:16px;padding:9px;box-shadow:0 4px 22px #0003;display:none;min-width:180px}.layerMenu.open{display:block}.layerTitle{font-size:12px;font-weight:700;color:#69717d;padding:3px 8px 7px}.layerChoice{display:block;width:100%;border:0;background:#fff;text-align:left;border-radius:11px;padding:10px 9px;font-size:13px}.layerChoice.active{background:#17202a;color:#fff}.layerNote{font-size:10px;color:#69717d;line-height:1.45;padding:8px 8px 2px}.btn{border:0;background:rgba(255,255,255,.95);width:42px;height:42px;border-radius:14px;box-shadow:0 2px 14px #0002;font-size:18px}
 .sheet{position:fixed;left:10px;right:10px;bottom:10px;z-index:600;background:rgba(255,255,255,.96);backdrop-filter:blur(14px);border-radius:22px;padding:12px;box-shadow:0 5px 30px #0003;max-height:43vh;overflow:auto;transform:translateY(var(--sheet-shift,0px));transition:transform .18s ease-out;touch-action:none;will-change:transform;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 .sheet.dragging{transition:none}.sheet.gestureBoundary{overscroll-behavior:none}
-.handle{width:38px;height:5px;background:#b9c0ca;border-radius:3px;margin:0 auto 10px;cursor:grab;touch-action:none}
+.handle{width:48px;height:22px;background:transparent;border-radius:12px;margin:-6px auto 4px;cursor:grab;touch-action:none;position:relative}.handle:after{content:"";position:absolute;left:5px;right:5px;top:8px;height:5px;background:#b9c0ca;border-radius:3px}
 .filters{display:flex;gap:7px;overflow:auto;padding-bottom:8px}.chip{white-space:nowrap;border:1px solid #d9dde4;background:#fff;border-radius:20px;padding:7px 11px;font-size:13px}.chip.active{background:#17202a;color:white;border-color:#17202a}
 .trip{border:1px solid #e2e5ea;border-radius:16px;padding:12px;margin-top:8px}.filterSummary{font-size:12px;color:#69717d;margin-top:10px}.placeButtons{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.placeBtn{border:1px solid #d9dde4;background:#fff;border-radius:12px;padding:9px 11px;font-size:13px}
 .triphead{display:flex;justify-content:space-between;gap:10px}.tripname{font-weight:700}.date{font-size:12px;color:#69717d;margin-top:4px}.badges{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap}.badge{font-size:12px;background:#f0f2f5;border-radius:10px;padding:5px 8px}.route{font-size:13px;margin-top:10px;line-height:1.6}.legend{font-size:11px;color:#69717d;margin-top:10px}
@@ -118,10 +118,9 @@ function setSheetShift(v,animate=false){
   sheet.style.setProperty('--sheet-shift',sheetShift+'px');
 }
 
-/* 地図とシートのジェスチャーを完全分離 */
+/* 地図とシートのジェスチャーを完全分離し、操作感を調整 */
 sheet.classList.add('gestureBoundary');
 
-/* Leaflet側へイベントを伝播させない */
 if(window.L && L.DomEvent){
   L.DomEvent.disableClickPropagation(sheet);
   L.DomEvent.disableScrollPropagation(sheet);
@@ -131,6 +130,8 @@ function isInteractiveTarget(el){
   return !!el?.closest('button, a, input, select, textarea');
 }
 
+let lastPointerY=0,lastPointerTime=0,pointerVelocity=0;
+
 function beginSheetDrag(e){
   if(isInteractiveTarget(e.target)) return;
   if(e.pointerType==='mouse' && e.button!==0) return;
@@ -138,6 +139,9 @@ function beginSheetDrag(e){
   draggingSheet=true;
   sheetStartY=e.clientY;
   sheetStartShift=sheetShift;
+  lastPointerY=e.clientY;
+  lastPointerTime=performance.now();
+  pointerVelocity=0;
   sheet.classList.add('dragging');
 
   e.preventDefault();
@@ -149,23 +153,48 @@ function moveSheetDrag(e){
   if(!draggingSheet) return;
   e.preventDefault();
   e.stopPropagation();
-  setSheetShift(sheetStartShift+(e.clientY-sheetStartY),false);
+
+  const now=performance.now();
+  const dt=Math.max(8,now-lastPointerTime);
+  const dy=e.clientY-lastPointerY;
+  pointerVelocity=dy/dt;
+  lastPointerY=e.clientY;
+  lastPointerTime=now;
+
+  /* 指に対してほぼ1:1。端だけ少し抵抗をかける */
+  let next=sheetStartShift+(e.clientY-sheetStartY);
+  const max=sheetMaxShift();
+  if(next<0) next=next*.22;
+  if(next>max) next=max+(next-max)*.22;
+  setSheetShift(next,false);
 }
 
 function finishSheetDrag(e){
   if(!draggingSheet) return;
   if(e){e.preventDefault();e.stopPropagation();}
+
+  const max=sheetMaxShift();
+  let target=sheetShift;
+
+  /* 強くスワイプした時だけ、その方向へ少し追従 */
+  if(Math.abs(pointerVelocity)>.45){
+    target=sheetShift+(pointerVelocity>0?70:-70);
+  }
+
+  /* 端を少し超えていた場合は端へ自然に戻す */
+  if(target<0) target=0;
+  if(target>max) target=max;
+
   draggingSheet=false;
   sheet.classList.remove('dragging');
+  setSheetShift(target,true);
 }
 
-/* capture:true でLeafletより先にシート側で受け止める */
 sheet.addEventListener('pointerdown',beginSheetDrag,{capture:true,passive:false});
 sheet.addEventListener('pointermove',moveSheetDrag,{capture:true,passive:false});
 sheet.addEventListener('pointerup',finishSheetDrag,{capture:true,passive:false});
 sheet.addEventListener('pointercancel',finishSheetDrag,{capture:true,passive:false});
 
-/* iPhone Safariのタッチイベントもシート内で止める */
 sheet.addEventListener('touchstart',e=>{
   if(isInteractiveTarget(e.target)) return;
   e.stopPropagation();
