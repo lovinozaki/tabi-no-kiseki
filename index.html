@@ -20,6 +20,7 @@
 .small{font-size:12px;color:#69717d}.sample{color:#1769aa;font-weight:600}
 .googlebtn{display:block;width:100%;margin-top:12px;border:0;border-radius:13px;padding:11px 12px;background:#f1f6ff;color:#1769aa;font-weight:700;font-size:13px;text-align:center}
 .googlebtn:active{transform:scale(.99)}
+.planbtn{display:block;width:100%;margin-top:10px;border:0;border-radius:13px;padding:12px;background:#17202a;color:#fff;font-weight:700;font-size:14px}
 </style>
 </head>
 <body>
@@ -50,7 +51,8 @@
       <span class="badge">🚗 車</span><span class="badge">🛣️ 東九州道</span><span class="badge">🛣️ 大分道</span><span class="badge">📍 由布岳</span>
     </div>
     <div class="route">小倉駅から東九州自動車道 → 日出JCT → 大分自動車道を経て由布岳方面へ。<br>所要時間の目安：約2時間10分。<br><span class="small">※開発用の架空サンプルデータです。個人の移動履歴・GPS・写真は使用していません。</span></div>
-<button class="googlebtn" id="googleRouteBtn">🗺️ Googleマップでルートを見る</button>
+<button class="planbtn" id="planRouteBtn">📍 目的地を決める → Googleマップ</button>
+<button class="googlebtn" id="googleRouteBtn">🗺️ このルートをGoogleマップで見る</button>
     <div class="legend">標準地図で動作確認中。航空写真などの追加レイヤーは料金・利用条件を確認してから追加します。</div>
   </div>
 </div>
@@ -62,7 +64,8 @@
     <p class="small">2026年9月29日 ・ 開発用サンプル</p>
     <p>🚗 車で移動<br>🛣️ 東九州自動車道 → 日出JCT → 大分自動車道<br>⏱️ 所要時間の目安：約2時間10分</p>
     <p>ここは将来、ログイン後にユーザー自身の「旅」「移動の軌跡」「写真」が入る領域です。</p>
-<p><button class="googlebtn" id="googleRouteModalBtn">🗺️ Googleマップでルートを見る</button></p>
+<p><button class="planbtn" id="planRouteModalBtn">📍 目的地を決める → Googleマップ</button></p>
+<p><button class="googlebtn" id="googleRouteModalBtn">🗺️ このルートをGoogleマップで見る</button></p>
     <p class="sample">現在は個人データを一切使わない開発用サンプルです。</p>
   </div>
 </div>
@@ -116,9 +119,17 @@ L.marker(route[0]).addTo(map).bindPopup('<b>出発</b><br>小倉駅');
 L.marker(route[route.length-1]).addTo(map).bindPopup('<b>到着</b><br>由布岳');
 map.fitBounds(line.getBounds(),{padding:[30,170]});
 
+const googleMapsBase='https://www.google.com/maps/search/?api=1&query=';
+const routeUrl='https://www.google.com/maps/dir/?api=1&origin=小倉駅,福岡県&destination=由布岳,大分県&travelmode=driving';
+
+document.getElementById('planRouteBtn').onclick=()=>{
+  window.location.href=googleMapsBase+encodeURIComponent('目的地を検索');
+};
 document.getElementById('googleRouteBtn').onclick=()=>{
-  const url='https://www.google.com/maps/dir/?api=1&origin=小倉駅,福岡県&destination=由布岳,大分県&travelmode=driving';
-  window.location.href=url;
+  window.location.href=routeUrl;
+};
+document.getElementById('planRouteModalBtn').onclick=()=>{
+  window.location.href=googleMapsBase+encodeURIComponent('目的地を検索');
 };
 document.getElementById('layerBtn').onclick=()=>{
   alert('現在は標準地図のみです。航空写真などの追加レイヤーは、料金・利用条件を確認した上で後から追加します。');
@@ -133,8 +144,7 @@ document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{
 document.getElementById('tripCard').onclick=()=>document.getElementById('modal').classList.add('open');
 document.getElementById('close').onclick=()=>document.getElementById('modal').classList.remove('open');
 document.getElementById('googleRouteModalBtn').onclick=()=>{
-  const url='https://www.google.com/maps/dir/?api=1&origin=小倉駅,福岡県&destination=由布岳,大分県&travelmode=driving';
-  window.location.href=url;
+  window.location.href=routeUrl;
 };
 document.getElementById('modal').onclick=e=>{if(e.target.id==='modal')document.getElementById('modal').classList.remove('open')};
 </script>
