@@ -22,6 +22,8 @@
 .googlebtn{display:block;width:100%;margin-top:12px;border:0;border-radius:13px;padding:11px 12px;background:#f1f6ff;color:#1769aa;font-weight:700;font-size:13px;text-align:center}
 .googlebtn:active{transform:scale(.99)}
 .planbtn{display:block;width:100%;margin-top:10px;border:0;border-radius:13px;padding:12px;background:#17202a;color:#fff;font-weight:700;font-size:14px}
+.tripInput{display:block;width:100%;margin:6px 0 12px;border:1px solid #d9dde4;border-radius:12px;padding:11px 12px;font-size:14px;background:#fff;color:#17202a}
+.tripInput:focus{outline:2px solid #c7d9ee;border-color:#1769aa}
 </style>
 </head>
 <body>
@@ -49,6 +51,7 @@
     <button class="chip">場所</button>
     <button class="chip">同行者</button>
   </div>
+  <button class="planbtn" id="newTripBtn">＋ 新しい旅を計画する</button>
   <div class="trip" id="tripCard">
     <div class="triphead">
       <div><div class="tripname">小倉駅 → 由布岳</div><div class="date">2026年9月29日 ・ <span class="sample">サンプル旅</span></div></div>
@@ -73,6 +76,30 @@
       </div>
     </div>
     <div class="legend">標準地図／航空写真を切り替えできます。現在は開発用サンプルデータです。</div>
+  </div>
+</div>
+
+<div class="modal" id="newTripModal">
+  <div class="modalbox">
+    <button class="close" id="newTripClose">×</button>
+    <h2>新しい旅</h2>
+    <p class="small">まず旅を作り、Googleマップで行き先とルートを計画します。</p>
+
+    <label class="small" for="newTripName">旅の名前</label>
+    <input id="newTripName" class="tripInput" type="text" placeholder="例：アラタF35岩国基地">
+
+    <label class="small" for="newTripOrigin">出発地</label>
+    <input id="newTripOrigin" class="tripInput" type="text" placeholder="例：周南市下上">
+
+    <label class="small" for="newTripDestination">目的地</label>
+    <input id="newTripDestination" class="tripInput" type="text" placeholder="例：岩国基地">
+    <button class="googlebtn" id="searchDestinationBtn">🔎 目的地をGoogleマップで検索</button>
+
+    <label class="small" for="newTripCompanion">同行者</label>
+    <input id="newTripCompanion" class="tripInput" type="text" placeholder="例：アラタ">
+
+    <button class="planbtn" id="planNewTripBtn">🗺️ Googleマップで旅を計画する</button>
+    <p class="small" style="margin-top:10px">※Googleマップへの連携は無料のMaps URLのみを使用します。API・Places API・Routes APIは使用しません。</p>
   </div>
 </div>
 
@@ -283,10 +310,63 @@ async function loadRoadAccurateRoute(){
 loadRoadAccurateRoute();
 
 const googleMapsBase='https://www.google.com/maps/search/?api=1&query=';
+
+function openGoogleSearch(query){
+  const q=(query||'').trim();
+  if(!q){ alert('検索する場所を入力してください。'); return; }
+  window.location.href=googleMapsBase+encodeURIComponent(q);
+}
+
+function openGoogleDirections(origin,destination){
+  const o=(origin||'').trim();
+  const d=(destination||'').trim();
+  if(!d){ alert('目的地を入力してください。'); return; }
+  const params=new URLSearchParams();
+  params.set('api','1');
+  if(o) params.set('origin',o);
+  params.set('destination',d);
+  params.set('travelmode','driving');
+  window.location.href='https://www.google.com/maps/dir/?'+params.toString();
+}
 const routeUrl='https://www.google.com/maps/dir/?api=1&origin=小倉駅,福岡県&destination=由布岳,大分県&travelmode=driving';
 
+const newTripModal=document.getElementById('newTripModal');
+const newTripBtn=document.getElementById('newTripBtn');
+const newTripClose=document.getElementById('newTripClose');
+const newTripName=document.getElementById('newTripName');
+const newTripOrigin=document.getElementById('newTripOrigin');
+const newTripDestination=document.getElementById('newTripDestination');
+const newTripCompanion=document.getElementById('newTripCompanion');
+
+newTripBtn.onclick=()=>newTripModal.classList.add('open');
+newTripClose.onclick=()=>newTripModal.classList.remove('open');
+
+document.getElementById('searchDestinationBtn').onclick=()=>{
+  openGoogleSearch(newTripDestination.value);
+};
+
+document.getElementById('planNewTripBtn').onclick=()=>{
+  const destination=newTripDestination.value.trim();
+  if(!destination){
+    alert('目的地を入力してください。');
+    newTripDestination.focus();
+    return;
+  }
+
+  const trip={
+    name:newTripName.value.trim() || destination,
+    origin:newTripOrigin.value.trim(),
+    destination,
+    companion:newTripCompanion.value.trim()
+  };
+
+  try{localStorage.setItem('tabi_current_plan',JSON.stringify(trip));}catch(_){}
+
+  openGoogleDirections(trip.origin,trip.destination);
+};
+
 document.getElementById('planRouteBtn').onclick=()=>{
-  window.location.href=googleMapsBase+encodeURIComponent('目的地を検索');
+  newTripModal.classList.add('open');
 };
 document.getElementById('arriveBtn').onclick=()=>document.getElementById('arrivalModal').classList.add('open');
 document.getElementById('arrivalClose').onclick=()=>document.getElementById('arrivalModal').classList.remove('open');
@@ -304,7 +384,7 @@ document.getElementById('googleRouteBtn').onclick=()=>{
   window.location.href=routeUrl;
 };
 document.getElementById('planRouteModalBtn').onclick=()=>{
-  window.location.href=googleMapsBase+encodeURIComponent('目的地を検索');
+  newTripModal.classList.add('open');
 };
 const layerMenu=document.getElementById('layerMenu');
 document.getElementById('layerBtn').onclick=()=>layerMenu.classList.toggle('open');
@@ -374,6 +454,7 @@ document.getElementById('googleRouteModalBtn').onclick=()=>{
   window.location.href=routeUrl;
 };
 document.getElementById('modal').onclick=e=>{if(e.target.id==='modal')document.getElementById('modal').classList.remove('open')};
+newTripModal.onclick=e=>{if(e.target.id==='newTripModal')newTripModal.classList.remove('open')};
 </script>
 </body>
 </html>
