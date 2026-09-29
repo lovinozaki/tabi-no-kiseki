@@ -24,6 +24,13 @@
 .planbtn{display:block;width:100%;margin-top:10px;border:0;border-radius:13px;padding:12px;background:#17202a;color:#fff;font-weight:700;font-size:14px}
 .tripInput{display:block;width:100%;margin:6px 0 12px;border:1px solid #d9dde4;border-radius:12px;padding:11px 12px;font-size:14px;background:#fff;color:#17202a}
 .tripInput:focus{outline:2px solid #c7d9ee;border-color:#1769aa}
+.companionPicker{margin:6px 0 12px}
+.companionOptions{display:flex;gap:7px;flex-wrap:wrap}
+.companionChoice,.companionOther{border:1px solid #d9dde4;background:#fff;border-radius:20px;padding:8px 11px;font-size:13px}
+.companionChoice.selected{background:#17202a;color:#fff;border-color:#17202a}
+.companionOther{color:#1769aa;border-color:#c7d9ee;margin-top:7px}
+.selectedCompanions{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+.selectedCompanion{font-size:12px;background:#eef4fb;color:#1769aa;border-radius:10px;padding:6px 9px}
 </style>
 </head>
 <body>
@@ -95,8 +102,14 @@
     <input id="newTripDestination" class="tripInput" type="text" placeholder="例：岩国基地">
     <button class="googlebtn" id="searchDestinationBtn">🔎 目的地をGoogleマップで検索</button>
 
-    <label class="small" for="newTripCompanion">同行者</label>
-    <input id="newTripCompanion" class="tripInput" type="text" placeholder="例：アラタ">
+    <label class="small">同行者</label>
+    <div id="companionPicker" class="companionPicker">
+      <div class="small" style="margin-bottom:7px">設定済みの人物</div>
+      <div id="companionOptions" class="companionOptions"></div>
+      <button type="button" class="companionOther" id="companionOtherBtn">＋ その他</button>
+      <input id="companionOtherInput" class="tripInput" type="text" placeholder="同行者の名前を入力" style="display:none;margin-top:8px">
+      <div id="selectedCompanions" class="selectedCompanions"></div>
+    </div>
 
     <button class="planbtn" id="planNewTripBtn">🗺️ Googleマップで旅を計画する</button>
     <p class="small" style="margin-top:10px">※Googleマップへの連携は無料のMaps URLのみを使用します。API・Places API・Routes APIは使用しません。</p>
@@ -336,7 +349,53 @@ const newTripClose=document.getElementById('newTripClose');
 const newTripName=document.getElementById('newTripName');
 const newTripOrigin=document.getElementById('newTripOrigin');
 const newTripDestination=document.getElementById('newTripDestination');
-const newTripCompanion=document.getElementById('newTripCompanion');
+const companionOptions=document.getElementById('companionOptions');
+const companionOtherBtn=document.getElementById('companionOtherBtn');
+const companionOtherInput=document.getElementById('companionOtherInput');
+const selectedCompanions=document.getElementById('selectedCompanions');
+
+/* 同行者は「設定済みの人物」をタップ選択。
+   「その他」は名前を入力して追加できます。
+   現段階ではサンプルとしてアラタを設定済み人物にしています。 */
+const configuredCompanions=['アラタ'];
+let selectedCompanionNames=[];
+
+function renderCompanionPicker(){
+  companionOptions.innerHTML='';
+  configuredCompanions.forEach(name=>{
+    const b=document.createElement('button');
+    b.type='button';
+    b.className='companionChoice'+(selectedCompanionNames.includes(name)?' selected':'');
+    b.textContent='👤 '+name;
+    b.onclick=()=>{
+      if(selectedCompanionNames.includes(name)){
+        selectedCompanionNames=selectedCompanionNames.filter(x=>x!==name);
+      }else{
+        selectedCompanionNames.push(name);
+      }
+      renderCompanionPicker();
+    };
+    companionOptions.appendChild(b);
+  });
+  selectedCompanions.innerHTML=selectedCompanionNames.map(name=>'<span class="selectedCompanion">✓ '+name+'</span>').join('');
+}
+
+companionOtherBtn.onclick=()=>{
+  const opening=companionOtherInput.style.display==='none';
+  companionOtherInput.style.display=opening?'block':'none';
+  if(opening) companionOtherInput.focus();
+};
+
+companionOtherInput.addEventListener('change',()=>{
+  const name=companionOtherInput.value.trim();
+  if(!name) return;
+  if(!selectedCompanionNames.includes(name)) selectedCompanionNames.push(name);
+  companionOtherInput.value='';
+  companionOtherInput.style.display='none';
+  renderCompanionPicker();
+});
+
+renderCompanionPicker();
 
 newTripBtn.onclick=()=>newTripModal.classList.add('open');
 newTripClose.onclick=()=>newTripModal.classList.remove('open');
@@ -357,7 +416,7 @@ document.getElementById('planNewTripBtn').onclick=()=>{
     name:newTripName.value.trim() || destination,
     origin:newTripOrigin.value.trim(),
     destination,
-    companion:newTripCompanion.value.trim()
+    companion:selectedCompanionNames.join('、')
   };
 
   try{localStorage.setItem('tabi_current_plan',JSON.stringify(trip));}catch(_){}
