@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>旅の軌跡</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+#map{height:100%}
+.title{
+position:absolute;z-index:1000;top:15px;left:15px;
+background:white;padding:10px 16px;border-radius:14px;
+font-size:20px;font-weight:bold;
+box-shadow:0 2px 12px #0003
+}
+.panel{
+position:absolute;z-index:1000;left:12px;right:12px;bottom:15px;
+background:#fffffff2;border-radius:20px;padding:14px;
+box-shadow:0 2px 18px #0003
+}
+.filters{display:flex;gap:8px;overflow:auto}
+.filters button{
+border:0;border-radius:12px;padding:9px 14px;
+background:#eee;white-space:nowrap
+}
+.trip{margin-top:10px;font-weight:bold}
+.small{font-size:13px;color:#666;margin-top:4px}
+</style>
+</head>
+<body>
+
+<div class="title">旅の軌跡</div>
+<div id="map"></div>
+
+<div class="panel">
+<div class="filters">
+<button>すべて</button>
+<button>2026</button>
+<button>旅</button>
+<button>場所</button>
+<button>同行者</button>
+</div>
+<div class="trip">アラタF35岩国基地</div>
+<div class="small">🚗 車　実際に移動した道を軌跡として残す</div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const map=L.map("map").setView([34.17,132.25],10);
+
+L.tileLayer(
+"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+{attribution:"© OpenStreetMap contributors"}
+).addTo(map);
+
+const route=[
+[34.055,131.805],
+[34.10,131.85],
+[34.16,132.05],
+[34.17,132.25]
+];
+
+L.polyline(route,{
+color:"#1976d2",
+weight:6,
+opacity:.9
+}).addTo(map);
+
+L.circleMarker(route[0],{radius:7}).addTo(map);
+L.circleMarker(route[route.length-1],{radius:7}).addTo(map);
+</script>
+
+</body>
+</html>
