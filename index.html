@@ -10,12 +10,12 @@
 #map{position:fixed;inset:0;z-index:0}
 .top{position:fixed;top:12px;left:12px;right:12px;z-index:500;display:flex;justify-content:space-between;align-items:center;pointer-events:none}
 .title{background:rgba(255,255,255,.94);backdrop-filter:blur(10px);border-radius:16px;padding:10px 14px;font-weight:700;box-shadow:0 2px 14px #0002;pointer-events:auto}
-.actions{display:flex;gap:8px}.btn{border:0;background:rgba(255,255,255,.95);width:42px;height:42px;border-radius:14px;box-shadow:0 2px 14px #0002;font-size:18px}
+.actions{display:flex;gap:8px}.layerMenu{position:fixed;top:62px;right:12px;z-index:550;background:rgba(255,255,255,.97);backdrop-filter:blur(12px);border-radius:16px;padding:9px;box-shadow:0 4px 22px #0003;display:none;min-width:180px}.layerMenu.open{display:block}.layerTitle{font-size:12px;font-weight:700;color:#69717d;padding:3px 8px 7px}.layerChoice{display:block;width:100%;border:0;background:#fff;text-align:left;border-radius:11px;padding:10px 9px;font-size:13px}.layerChoice.active{background:#17202a;color:#fff}.layerNote{font-size:10px;color:#69717d;line-height:1.45;padding:8px 8px 2px}.btn{border:0;background:rgba(255,255,255,.95);width:42px;height:42px;border-radius:14px;box-shadow:0 2px 14px #0002;font-size:18px}
 .sheet{position:fixed;left:10px;right:10px;bottom:10px;z-index:600;background:rgba(255,255,255,.96);backdrop-filter:blur(14px);border-radius:22px;padding:12px;box-shadow:0 5px 30px #0003;max-height:43vh;overflow:auto;transform:translateY(var(--sheet-shift,0px));transition:transform .28s cubic-bezier(.22,.8,.22,1);touch-action:none;will-change:transform}
 .sheet.dragging{transition:none}
 .handle{width:38px;height:5px;background:#b9c0ca;border-radius:3px;margin:0 auto 10px;cursor:grab;touch-action:none}
 .filters{display:flex;gap:7px;overflow:auto;padding-bottom:8px}.chip{white-space:nowrap;border:1px solid #d9dde4;background:#fff;border-radius:20px;padding:7px 11px;font-size:13px}.chip.active{background:#17202a;color:white;border-color:#17202a}
-.trip{border:1px solid #e2e5ea;border-radius:16px;padding:12px;margin-top:8px}
+.trip{border:1px solid #e2e5ea;border-radius:16px;padding:12px;margin-top:8px}.filterSummary{font-size:12px;color:#69717d;margin-top:10px}.placeButtons{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.placeBtn{border:1px solid #d9dde4;background:#fff;border-radius:12px;padding:9px 11px;font-size:13px}
 .triphead{display:flex;justify-content:space-between;gap:10px}.tripname{font-weight:700}.date{font-size:12px;color:#69717d;margin-top:4px}.badges{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap}.badge{font-size:12px;background:#f0f2f5;border-radius:10px;padding:5px 8px}.route{font-size:13px;margin-top:10px;line-height:1.6}.legend{font-size:11px;color:#69717d;margin-top:10px}
 .modal{position:fixed;inset:0;z-index:900;background:#0006;display:none;align-items:flex-end}.modal.open{display:flex}.modalbox{background:#fff;width:100%;border-radius:24px 24px 0 0;padding:20px;max-height:80vh;overflow:auto}.close{float:right;border:0;background:#eef0f3;border-radius:50%;width:34px;height:34px;font-size:18px}
 .small{font-size:12px;color:#69717d}.sample{color:#1769aa;font-weight:600}
@@ -32,6 +32,12 @@
     <button class="btn" id="layerBtn" title="地図情報">🗺️</button>
     <button class="btn" id="locBtn" title="現在地">◎</button>
   </div>
+</div>
+<div class="layerMenu" id="layerMenu">
+  <div class="layerTitle">地図表示</div>
+  <button class="layerChoice active" data-layer="standard">🗺️ 標準地図</button>
+  <button class="layerChoice" data-layer="aerial">🛰️ 航空写真</button>
+  <div class="layerNote">航空写真：国土地理院「地理院タイル」<br>※航空写真はズーム14〜18で表示</div>
 </div>
 
 <div class="sheet">
@@ -55,7 +61,18 @@
 <button class="planbtn" id="planRouteBtn">📍 目的地を決める → Googleマップ</button>
 <button class="googlebtn" id="googleRouteBtn">🗺️ このルートをGoogleマップで見る</button>
     <button class="googlebtn" id="arriveBtn">🏁 到着・旅を終了</button>
-    <div class="legend">標準地図で動作確認中。航空写真などの追加レイヤーは料金・利用条件を確認してから追加します。</div>
+    <div class="filterView" id="filterView">
+      <div class="filterSummary" id="filterSummary">すべての旅を表示しています。</div>
+      <div class="placeButtons" id="placeButtons" style="display:none">
+        <button class="placeBtn" data-lat="33.8869" data-lng="130.8827">📍 小倉駅</button>
+        <button class="placeBtn" data-lat="33.2820" data-lng="131.3920">📍 由布岳</button>
+      </div>
+      <div class="companionView" id="companionView" style="display:none">
+        <div class="badge">👤 サンプル同行者</div>
+        <div class="small" style="margin-top:8px">このサンプル旅の同行者として登録されています。</div>
+      </div>
+    </div>
+    <div class="legend">標準地図／航空写真を切り替えできます。現在は開発用サンプルデータです。</div>
   </div>
 </div>
 
@@ -126,7 +143,10 @@ handle.addEventListener('pointerup',finishSheetDrag);
 handle.addEventListener('pointercancel',finishSheetDrag);
 
 const map=L.map('map',{zoomControl:false}).setView([33.55,131.10],9);
-const standard=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(map);
+const standard=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'});
+const aerial=L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg',{minZoom:14,maxZoom:18,attribution:'<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院・地理院タイル</a>'});
+standard.addTo(map);
+let currentBase='standard';
 
 const routeWaypoints=[
   [33.8869,130.8827], // 小倉駅
@@ -208,17 +228,69 @@ document.getElementById('googleRouteBtn').onclick=()=>{
 document.getElementById('planRouteModalBtn').onclick=()=>{
   window.location.href=googleMapsBase+encodeURIComponent('目的地を検索');
 };
-document.getElementById('layerBtn').onclick=()=>{
-  alert('現在は標準地図のみです。航空写真などの追加レイヤーは、料金・利用条件を確認した上で後から追加します。');
-};
+const layerMenu=document.getElementById('layerMenu');
+document.getElementById('layerBtn').onclick=()=>layerMenu.classList.toggle('open');
+document.querySelectorAll('.layerChoice').forEach(btn=>{
+  btn.onclick=()=>{
+    const wanted=btn.dataset.layer;
+    if(wanted===currentBase){layerMenu.classList.remove('open');return}
+    if(wanted==='aerial'){
+      map.removeLayer(standard);
+      aerial.addTo(map);
+      currentBase='aerial';
+      if(map.getZoom()<14) map.setZoom(14);
+    }else{
+      map.removeLayer(aerial);
+      standard.addTo(map);
+      currentBase='standard';
+    }
+    document.querySelectorAll('.layerChoice').forEach(x=>x.classList.toggle('active',x===btn));
+    layerMenu.classList.remove('open');
+  };
+});
 document.getElementById('locBtn').onclick=()=>{
   if(!navigator.geolocation){alert('この端末では現在地機能を利用できません。');return}
   navigator.geolocation.getCurrentPosition(p=>map.setView([p.coords.latitude,p.coords.longitude],14),()=>alert('現在地を取得できませんでした。'));
 };
-document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{
-  document.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));c.classList.add('active');
+const chips=[...document.querySelectorAll('.chip')];
+const filterSummary=document.getElementById('filterSummary');
+const placeButtons=document.getElementById('placeButtons');
+const companionView=document.getElementById('companionView');
+chips.forEach(chip=>chip.onclick=()=>{
+  chips.forEach(x=>x.classList.remove('active'));
+  chip.classList.add('active');
+  placeButtons.style.display='none';
+  companionView.style.display='none';
+  const name=chip.textContent.trim();
+  if(name==='すべて'){
+    filterSummary.textContent='すべての旅を表示しています。';
+    line && map.addLayer(line);
+  }else if(name==='2026'){
+    filterSummary.textContent='2026年の旅を表示しています。';
+    line && map.addLayer(line);
+  }else if(name==='旅'){
+    filterSummary.textContent='旅単位で表示しています。選択すると旅の詳細を開けます。';
+    line && map.addLayer(line);
+  }else if(name==='場所'){
+    filterSummary.textContent='登録された場所を選んで地図を移動できます。';
+    placeButtons.style.display='flex';
+  }else if(name==='同行者'){
+    filterSummary.textContent='同行者で絞り込んでいます。';
+    companionView.style.display='block';
+    line && map.addLayer(line);
+  }
 });
-document.getElementById('tripCard').onclick=()=>document.getElementById('modal').classList.add('open');
+document.querySelectorAll('.placeBtn').forEach(btn=>{
+  btn.onclick=e=>{
+    e.stopPropagation();
+    const lat=Number(btn.dataset.lat),lng=Number(btn.dataset.lng);
+    map.setView([lat,lng],15);
+  };
+});
+document.getElementById('tripCard').onclick=e=>{
+  if(e.target.closest('button')) return;
+  document.getElementById('modal').classList.add('open');
+};
 document.getElementById('close').onclick=()=>document.getElementById('modal').classList.remove('open');
 document.getElementById('googleRouteModalBtn').onclick=()=>{
   window.location.href=routeUrl;
