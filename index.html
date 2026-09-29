@@ -184,11 +184,6 @@ async function loadRoadAccurateRoute(){
 }
 loadRoadAccurateRoute();
 
-const line=L.polyline(route,{color:'#1769aa',weight:6,opacity:.9}).addTo(map);
-L.marker(route[0]).addTo(map).bindPopup('<b>出発</b><br>小倉駅');
-L.marker(route[route.length-1]).addTo(map).bindPopup('<b>到着</b><br>由布岳');
-map.fitBounds(line.getBounds(),{padding:[30,170]});
-
 const googleMapsBase='https://www.google.com/maps/search/?api=1&query=';
 const routeUrl='https://www.google.com/maps/dir/?api=1&origin=小倉駅,福岡県&destination=由布岳,大分県&travelmode=driving';
 
