@@ -1,68 +1,98 @@
 <!doctype html>
 <html lang="ja">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>旅の軌跡</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
-:root{--bg:#fff;--ink:#17202a;--muted:#68727d;--panel:rgba(255,255,255,.94);--line:#1f78d1}
-*{box-sizing:border-box}html,body{margin:0;height:100%;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif;color:var(--ink);background:#eef1f4}
-#map{position:fixed;inset:0}
-.top{position:fixed;z-index:1000;top:env(safe-area-inset-top,10px);left:12px;right:12px;display:flex;justify-content:space-between;align-items:center;padding:10px 12px;margin-top:6px;background:var(--panel);border:1px solid #e5e8eb;border-radius:16px;box-shadow:0 4px 18px rgba(0,0,0,.12);backdrop-filter:blur(12px)}
-.title{font-size:18px;font-weight:800}.sub{font-size:11px;color:var(--muted);margin-top:2px}
-.iconbtn{border:0;background:#f3f5f7;border-radius:12px;width:42px;height:42px;font-size:19px}
-.controls{position:fixed;z-index:1000;right:12px;top:92px;display:flex;flex-direction:column;gap:8px}.controls button{width:44px;height:44px;border:0;border-radius:13px;background:var(--panel);box-shadow:0 3px 14px rgba(0,0,0,.14);font-size:18px}
-.sheet{position:fixed;z-index:1000;left:10px;right:10px;bottom:10px;padding:14px;background:var(--panel);border:1px solid #e4e7ea;border-radius:20px;box-shadow:0 8px 30px rgba(0,0,0,.18);backdrop-filter:blur(16px)}
-.filters{display:flex;gap:7px;overflow:auto;padding-bottom:10px}.filters button{white-space:nowrap;border:1px solid #d9dee3;background:#fff;border-radius:999px;padding:8px 12px;font-weight:700}.filters button.active{background:#17202a;color:#fff;border-color:#17202a}
-.trip{display:flex;align-items:center;gap:11px;padding:8px 2px 4px}.dot{width:13px;height:13px;border-radius:50%;background:#1976d2;box-shadow:0 0 0 4px #dcecff}.trip h3{margin:0;font-size:16px}.trip p{margin:3px 0 0;color:var(--muted);font-size:12px}.arrow{margin-left:auto;font-size:20px;color:#78828c}
-.legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;color:#56616c;font-size:11px}.legend span{display:flex;align-items:center;gap:5px}.sampleline{width:24px;height:3px;background:#1976d2;border-radius:2px}.sampledash{width:24px;border-top:3px dashed #1976d2}
-.modal{display:none;position:fixed;z-index:2000;inset:0;background:rgba(0,0,0,.38);align-items:flex-end}.card{width:100%;background:#fff;border-radius:24px 24px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom));max-height:78vh;overflow:auto}.close{float:right;border:0;background:#f1f3f5;border-radius:50%;width:36px;height:36px}.card h2{margin:4px 42px 6px 0;font-size:22px}.meta{color:var(--muted);font-size:13px}.badges{display:flex;gap:7px;flex-wrap:wrap;margin:14px 0}.badge{background:#eef4fa;border-radius:999px;padding:7px 10px;font-size:12px;font-weight:700}.section{border-top:1px solid #edf0f2;padding-top:14px;margin-top:14px}.route{line-height:1.9;font-size:14px}.note{font-size:12px;color:#6c757d;background:#f7f8f9;padding:10px;border-radius:12px}
+*{box-sizing:border-box}html,body{margin:0;height:100%;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;background:#f6f7f9;color:#17202a}
+#map{position:fixed;inset:0;z-index:0}
+.top{position:fixed;top:12px;left:12px;right:12px;z-index:500;display:flex;justify-content:space-between;align-items:center;pointer-events:none}
+.title{background:rgba(255,255,255,.94);backdrop-filter:blur(10px);border-radius:16px;padding:10px 14px;font-weight:700;box-shadow:0 2px 14px #0002;pointer-events:auto}
+.actions{display:flex;gap:8px}.btn{border:0;background:rgba(255,255,255,.95);width:42px;height:42px;border-radius:14px;box-shadow:0 2px 14px #0002;font-size:18px}
+.sheet{position:fixed;left:10px;right:10px;bottom:10px;z-index:600;background:rgba(255,255,255,.96);backdrop-filter:blur(14px);border-radius:22px;padding:12px;box-shadow:0 5px 30px #0003;max-height:43vh;overflow:auto}
+.handle{width:38px;height:4px;background:#c9ced6;border-radius:3px;margin:0 auto 10px}
+.filters{display:flex;gap:7px;overflow:auto;padding-bottom:8px}.chip{white-space:nowrap;border:1px solid #d9dde4;background:#fff;border-radius:20px;padding:7px 11px;font-size:13px}.chip.active{background:#17202a;color:white;border-color:#17202a}
+.trip{border:1px solid #e2e5ea;border-radius:16px;padding:12px;margin-top:8px}
+.triphead{display:flex;justify-content:space-between;gap:10px}.tripname{font-weight:700}.date{font-size:12px;color:#69717d;margin-top:4px}.badges{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap}.badge{font-size:12px;background:#f0f2f5;border-radius:10px;padding:5px 8px}.route{font-size:13px;margin-top:10px;line-height:1.6}.legend{font-size:11px;color:#69717d;margin-top:10px}
+.modal{position:fixed;inset:0;z-index:900;background:#0006;display:none;align-items:flex-end}.modal.open{display:flex}.modalbox{background:#fff;width:100%;border-radius:24px 24px 0 0;padding:20px;max-height:80vh;overflow:auto}.close{float:right;border:0;background:#eef0f3;border-radius:50%;width:34px;height:34px;font-size:18px}
+.small{font-size:12px;color:#69717d}.sample{color:#1769aa;font-weight:600}
 </style>
 </head>
 <body>
 <div id="map"></div>
-<div class="top"><div><div class="title">旅の軌跡</div><div class="sub">地図に、実際に行った旅のルートを残す</div></div><button class="iconbtn" onclick="openSettings()">⚙️</button></div>
-<div class="controls">
-<button onclick="toggleBase()" title="地図切替">🗺️</button>
-<button onclick="locate()" title="現在地">◎</button>
-<button onclick="fitRoute()" title="旅を表示">⌖</button>
+<div class="top">
+  <div class="title">旅の軌跡</div>
+  <div class="actions">
+    <button class="btn" id="layerBtn" title="地図切替">🗺️</button>
+    <button class="btn" id="locBtn" title="現在地">◎</button>
+  </div>
 </div>
+
 <div class="sheet">
-<div class="filters">
-<button class="active">すべて</button><button>2026</button><button>旅</button><button>場所</button><button>同行者</button>
+  <div class="handle"></div>
+  <div class="filters">
+    <button class="chip active">すべて</button>
+    <button class="chip">2026</button>
+    <button class="chip">旅</button>
+    <button class="chip">場所</button>
+    <button class="chip">同行者</button>
+  </div>
+  <div class="trip" id="tripCard">
+    <div class="triphead">
+      <div><div class="tripname">小倉駅 → 由布岳</div><div class="date">2026年9月29日 ・ <span class="sample">サンプル旅</span></div></div>
+      <div>🚗</div>
+    </div>
+    <div class="badges">
+      <span class="badge">🚗 車</span><span class="badge">🛣️ 東九州道</span><span class="badge">📍 由布岳</span>
+    </div>
+    <div class="route">小倉駅から東九州自動車道を利用して由布岳へ。<br>所要時間の目安：約2時間10分。<br><span class="small">※開発用の架空サンプルデータです。個人の移動履歴・GPS・写真は使用していません。</span></div>
+    <div class="legend">このサンプルを使って「旅・移動の軌跡・写真」の表示と操作を作り込んでいきます。</div>
+  </div>
 </div>
-<div class="trip" onclick="openTrip()"><span class="dot"></span><div><h3>小倉駅 → 由布岳</h3><p>2026年9月29日 ・ 🚗 車 ・ 東九州道</p></div><div class="arrow">›</div></div>
-<div class="legend"><span><i class="sampleline"></i>旅のルート</span><span>🚗 車</span><span>📍 出発・到着</span></div>
+
+<div class="modal" id="modal">
+  <div class="modalbox">
+    <button class="close" id="close">×</button>
+    <h2>小倉駅 → 由布岳</h2>
+    <p class="small">2026年9月29日 ・ 開発用サンプル</p>
+    <p>🚗 車で移動<br>🛣️ 東九州自動車道を利用<br>⏱️ 所要時間の目安：約2時間10分</p>
+    <p>ここは将来、ログイン後にユーザー自身の「旅」「移動の軌跡」「写真」が入る領域です。</p>
+    <p class="sample">現在は個人データを一切使わない開発用サンプルです。</p>
+  </div>
 </div>
-<div id="modal" class="modal" onclick="if(event.target===this)closeTrip()">
-<div class="card"><button class="close" onclick="closeTrip()">✕</button>
-<h2>小倉駅 → 由布岳</h2><div class="meta">2026年9月29日 ・ サンプル旅</div>
-<div class="badges"><span class="badge">🚗 車</span><span class="badge">🛣 東九州自動車道</span><span class="badge">約2時間05分</span></div>
-<div class="section"><b>旅の移動</b><div class="route">小倉駅<br>↓ 北九州JCT<br>↓ E10 東九州自動車道<br>↓ 宇佐・速見方面<br>↓ 日出JCT<br>↓ 由布岳・湯布院方面</div></div>
-<div class="section"><b>この旅で試していること</b><p>旅をひとつの単位として、移動の軌跡・交通手段・出発地・目的地を地図上に残すサンプルです。</p></div>
-<div class="note">これは開発用のサンプルデータです。個人の自宅位置・家族情報・実際のGPSログ・個人写真は使用していません。</div>
-</div></div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-const map=L.map('map',{zoomControl:false}).setView([33.45,131.05],9);
+const map=L.map('map',{zoomControl:false}).setView([33.55,131.10],9);
 const standard=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(map);
 const satellite=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Tiles © Esri'});
 let sat=false;
+
 const route=[
-[33.8867,130.8827], // Kokura
-[33.872,130.90],[33.846,130.95],[33.72,130.99],[33.58,131.00],
-[33.42,131.06],[33.32,131.28],[33.28,131.39]
+[33.8869,130.8827], [33.82,130.94], [33.72,131.02], [33.62,131.10],
+[33.52,131.18], [33.43,131.27], [33.34,131.35], [33.282,131.392]
 ];
-const line=L.polyline(route,{color:'#1976d2',weight:6,opacity:.9}).addTo(map);
-L.circleMarker(route[0],{radius:8,color:'#fff',weight:3,fillColor:'#1976d2',fillOpacity:1}).addTo(map).bindTooltip('小倉駅');
-L.circleMarker(route[route.length-1],{radius:8,color:'#fff',weight:3,fillColor:'#d64545',fillOpacity:1}).addTo(map).bindTooltip('由布岳');
-function fitRoute(){map.fitBounds(line.getBounds(),{padding:[70,70]})}
-function toggleBase(){if(sat){map.removeLayer(satellite);standard.addTo(map)}else{map.removeLayer(standard);satellite.addTo(map)}sat=!sat}
-function locate(){map.locate({setView:true,maxZoom:14,enableHighAccuracy:true})}
-function openTrip(){document.getElementById('modal').style.display='flex'}
-function closeTrip(){document.getElementById('modal').style.display='none'}
-function openSettings(){alert('設定は次の開発段階で追加します。')}
-fitRoute();
+const line=L.polyline(route,{color:'#1769aa',weight:6,opacity:.9}).addTo(map);
+L.marker(route[0]).addTo(map).bindPopup('<b>出発</b><br>小倉駅');
+L.marker(route[route.length-1]).addTo(map).bindPopup('<b>到着</b><br>由布岳');
+map.fitBounds(line.getBounds(),{padding:[30,170]});
+
+document.getElementById('layerBtn').onclick=()=>{
+  if(sat){map.removeLayer(satellite);standard.addTo(map)}else{map.removeLayer(standard);satellite.addTo(map)}
+  sat=!sat;
+};
+document.getElementById('locBtn').onclick=()=>{
+  if(!navigator.geolocation){alert('この端末では現在地機能を利用できません。');return}
+  navigator.geolocation.getCurrentPosition(p=>map.setView([p.coords.latitude,p.coords.longitude],14),()=>alert('現在地を取得できませんでした。'));
+};
+document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{
+  document.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));c.classList.add('active');
+});
+document.getElementById('tripCard').onclick=()=>document.getElementById('modal').classList.add('open');
+document.getElementById('close').onclick=()=>document.getElementById('modal').classList.remove('open');
+document.getElementById('modal').onclick=e=>{if(e.target.id==='modal')document.getElementById('modal').classList.remove('open')};
 </script>
-</body></html>
+</body>
+</html>
