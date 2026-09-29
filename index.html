@@ -11,7 +11,7 @@
 .top{position:fixed;top:12px;left:12px;right:12px;z-index:500;display:flex;justify-content:space-between;align-items:center;pointer-events:none}
 .title{background:rgba(255,255,255,.94);backdrop-filter:blur(10px);border-radius:16px;padding:10px 14px;font-weight:700;box-shadow:0 2px 14px #0002;pointer-events:auto}
 .actions{display:flex;gap:8px}.btn{border:0;background:rgba(255,255,255,.95);width:42px;height:42px;border-radius:14px;box-shadow:0 2px 14px #0002;font-size:18px}
-.sheet{position:fixed;left:10px;right:10px;bottom:10px;z-index:600;background:rgba(255,255,255,.96);backdrop-filter:blur(14px);border-radius:22px;padding:12px;box-shadow:0 5px 30px #0003;max-height:43vh;overflow:auto;transform:translateY(var(--sheet-shift,0px));transition:transform .22s ease;touch-action:pan-y}
+.sheet{position:fixed;left:10px;right:10px;bottom:10px;z-index:600;background:rgba(255,255,255,.96);backdrop-filter:blur(14px);border-radius:22px;padding:12px;box-shadow:0 5px 30px #0003;max-height:43vh;overflow:auto;transform:translateY(var(--sheet-shift,0px));transition:transform .28s cubic-bezier(.22,.8,.22,1);touch-action:none;will-change:transform}
 .sheet.dragging{transition:none}
 .handle{width:38px;height:5px;background:#b9c0ca;border-radius:3px;margin:0 auto 10px;cursor:grab;touch-action:none}
 .filters{display:flex;gap:7px;overflow:auto;padding-bottom:8px}.chip{white-space:nowrap;border:1px solid #d9dde4;background:#fff;border-radius:20px;padding:7px 11px;font-size:13px}.chip.active{background:#17202a;color:white;border-color:#17202a}
@@ -54,7 +54,21 @@
     <div class="route">小倉駅から東九州自動車道 → 日出JCT → 大分自動車道を経て由布岳方面へ。<br>所要時間の目安：約2時間10分。<br><span class="small">※開発用の架空サンプルデータです。個人の移動履歴・GPS・写真は使用していません。</span></div>
 <button class="planbtn" id="planRouteBtn">📍 目的地を決める → Googleマップ</button>
 <button class="googlebtn" id="googleRouteBtn">🗺️ このルートをGoogleマップで見る</button>
+    <button class="googlebtn" id="arriveBtn">🏁 到着・旅を終了</button>
     <div class="legend">標準地図で動作確認中。航空写真などの追加レイヤーは料金・利用条件を確認してから追加します。</div>
+  </div>
+</div>
+
+<div class="modal" id="arrivalModal">
+  <div class="modalbox">
+    <button class="close" id="arrivalClose">×</button>
+    <h2>目的地に到着しました</h2>
+    <p>計画したルートと実際の移動が異なる場合があります。</p>
+    <p><b>実際のルートを記録しますか？</b></p>
+    <button class="planbtn" id="recordActualBtn">実際のルートを記録する</button>
+    <button class="googlebtn" id="keepPlanBtn">計画ルートのまま残す</button>
+    <button class="googlebtn" id="laterBtn">あとで決める</button>
+    <p class="small">※開発用画面です。実際のGPS記録機能は今後接続します。</p>
   </div>
 </div>
 
@@ -114,45 +128,62 @@ handle.addEventListener('pointercancel',finishSheetDrag);
 const map=L.map('map',{zoomControl:false}).setView([33.55,131.10],9);
 const standard=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(map);
 
-const route=[
-  // 小倉駅 → 小倉東IC → 北九州JCT
-  [33.8869,130.8827],
-  [33.8720,130.8950],
-  [33.8500,130.9060],
-  [33.83271,130.9103],
-  [33.8230,130.9010],
-  [33.81314,130.88753],
-
-  // E10 東九州自動車道
-  [33.7900,130.9050],
-  [33.7450,130.9400],
-  [33.7000,130.9750],
-  [33.6757,130.9984],
-  [33.6605,131.0194],
-  [33.6264,131.0766],
-  [33.5996,131.1293],
-  [33.5582,131.1718],
-  [33.5281,131.2357],
-  [33.5036,131.3265],
-  [33.4700,131.3500],
-  [33.4419,131.3740],
-  [33.4205,131.4297],
-  [33.3950,131.4480],
-  [33.37808,131.4522],
-  [33.35201,131.4476],
-
-  // 日出JCT → E34 大分自動車道 → 由布岳スマートIC
-  [33.3420,131.4300],
-  [33.3330,131.4120],
-  [33.3250,131.3990],
-  [33.3130,131.3970],
-  [33.30293,131.3978],
-
-  // 由布岳周辺（サンプル上の到着地点）
-  [33.2960,131.3950],
-  [33.2890,131.3930],
-  [33.2820,131.3920]
+const routeWaypoints=[
+  [33.8869,130.8827], // 小倉駅
+  [33.83271,130.9103], // 小倉東IC
+  [33.81314,130.88753], // 北九州JCT
+  [33.35201,131.4476], // 日出JCT
+  [33.30293,131.3978], // 由布岳スマートIC付近
+  [33.2820,131.3920] // 由布岳方面
 ];
+
+// 道路形状はOpenStreetMapの道路網をOSRMで取得。
+// 通信できない場合は、現在のサンプル線をフォールバックとして使用。
+const fallbackRoute=[
+  [33.8869,130.8827],[33.8720,130.8950],[33.8500,130.9060],
+  [33.83271,130.9103],[33.8230,130.9010],[33.81314,130.88753],
+  [33.7900,130.9050],[33.7450,130.9400],[33.7000,130.9750],
+  [33.6757,130.9984],[33.6605,131.0194],[33.6264,131.0766],
+  [33.5996,131.1293],[33.5582,131.1718],[33.5281,131.2357],
+  [33.5036,131.3265],[33.4700,131.3500],[33.4419,131.3740],
+  [33.4205,131.4297],[33.3950,131.4480],[33.37808,131.4522],
+  [33.35201,131.4476],[33.3420,131.4300],[33.3330,131.4120],
+  [33.3250,131.3990],[33.3130,131.3970],[33.30293,131.3978],
+  [33.2960,131.3950],[33.2890,131.3930],[33.2820,131.3920]
+];
+
+let line;
+let route=fallbackRoute;
+
+function drawRoute(points){
+  route=points;
+  if(line) map.removeLayer(line);
+  line=L.polyline(route,{color:'#1769aa',weight:6,opacity:.9}).addTo(map);
+  map.fitBounds(line.getBounds(),{padding:[30,170]});
+  if(window.startMarker) map.removeLayer(window.startMarker);
+  if(window.endMarker) map.removeLayer(window.endMarker);
+  window.startMarker=L.marker(route[0]).addTo(map).bindPopup('<b>出発</b><br>小倉駅');
+  window.endMarker=L.marker(route[route.length-1]).addTo(map).bindPopup('<b>到着</b><br>由布岳');
+}
+
+drawRoute(fallbackRoute);
+
+async function loadRoadAccurateRoute(){
+  const coords=routeWaypoints.map(p=>p[1]+','+p[0]).join(';');
+  const url='https://router.project-osrm.org/route/v1/driving/'+coords+'?overview=full&geometries=geojson&steps=false';
+  try{
+    const res=await fetch(url,{headers:{'Accept':'application/json'}});
+    if(!res.ok) throw new Error('routing failed');
+    const data=await res.json();
+    const geometry=data.routes?.[0]?.geometry?.coordinates;
+    if(!geometry?.length) throw new Error('no geometry');
+    drawRoute(geometry.map(p=>[p[1],p[0]]));
+  }catch(err){
+    console.warn('道路ルート取得に失敗したためサンプル線を使用します。',err);
+  }
+}
+loadRoadAccurateRoute();
+
 const line=L.polyline(route,{color:'#1769aa',weight:6,opacity:.9}).addTo(map);
 L.marker(route[0]).addTo(map).bindPopup('<b>出発</b><br>小倉駅');
 L.marker(route[route.length-1]).addTo(map).bindPopup('<b>到着</b><br>由布岳');
@@ -164,6 +195,18 @@ const routeUrl='https://www.google.com/maps/dir/?api=1&origin=小倉駅,福岡�
 document.getElementById('planRouteBtn').onclick=()=>{
   window.location.href=googleMapsBase+encodeURIComponent('目的地を検索');
 };
+document.getElementById('arriveBtn').onclick=()=>document.getElementById('arrivalModal').classList.add('open');
+document.getElementById('arrivalClose').onclick=()=>document.getElementById('arrivalModal').classList.remove('open');
+document.getElementById('recordActualBtn').onclick=()=>{
+  document.getElementById('arrivalModal').classList.remove('open');
+  alert('実際のGPS軌跡を「実際のルート」として保存する設計です。現在は開発用画面です。');
+};
+document.getElementById('keepPlanBtn').onclick=()=>{
+  document.getElementById('arrivalModal').classList.remove('open');
+  alert('計画ルートをそのまま旅の記録として残します。');
+};
+document.getElementById('laterBtn').onclick=()=>document.getElementById('arrivalModal').classList.remove('open');
+
 document.getElementById('googleRouteBtn').onclick=()=>{
   window.location.href=routeUrl;
 };
