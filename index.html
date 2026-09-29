@@ -118,7 +118,9 @@ function setSheetShift(v,animate=false){
   sheet.style.setProperty('--sheet-shift',sheetShift+'px');
 }
 
-/* 地図とシートのジェスチャーを完全分離し、操作感を調整 */
+/* シートは2状態だけ：
+   1) 全表示
+   2) バーだけ残して地図をメイン表示 */
 sheet.classList.add('gestureBoundary');
 
 if(window.L && L.DomEvent){
@@ -161,11 +163,13 @@ function moveSheetDrag(e){
   lastPointerY=e.clientY;
   lastPointerTime=now;
 
-  /* 指に対してほぼ1:1。端だけ少し抵抗をかける */
   let next=sheetStartShift+(e.clientY-sheetStartY);
   const max=sheetMaxShift();
-  if(next<0) next=next*.22;
-  if(next>max) next=max+(next-max)*.22;
+
+  /* 2状態の端では少しだけ抵抗をかける */
+  if(next<0) next=next*.18;
+  if(next>max) next=max+(next-max)*.18;
+
   setSheetShift(next,false);
 }
 
@@ -174,16 +178,16 @@ function finishSheetDrag(e){
   if(e){e.preventDefault();e.stopPropagation();}
 
   const max=sheetMaxShift();
-  let target=sheetShift;
 
-  /* 強くスワイプした時だけ、その方向へ少し追従 */
-  if(Math.abs(pointerVelocity)>.45){
-    target=sheetShift+(pointerVelocity>0?70:-70);
+  /* 基本は中間点で判定。強いスワイプならその方向を優先 */
+  let target;
+  if(pointerVelocity < -0.45){
+    target=0;
+  }else if(pointerVelocity > 0.45){
+    target=max;
+  }else{
+    target=sheetShift < max/2 ? 0 : max;
   }
-
-  /* 端を少し超えていた場合は端へ自然に戻す */
-  if(target<0) target=0;
-  if(target>max) target=max;
 
   draggingSheet=false;
   sheet.classList.remove('dragging');
@@ -212,7 +216,8 @@ sheet.addEventListener('touchend',e=>{
 },{capture:true,passive:false});
 
 window.addEventListener('resize',()=>{
-  setSheetShift(sheetShift,true);
+  const max=sheetMaxShift();
+  setSheetShift(sheetShift < max/2 ? 0 : max,true);
 });
 
 const map=L.map('map',{zoomControl:false}).setView([33.55,131.10],9);
