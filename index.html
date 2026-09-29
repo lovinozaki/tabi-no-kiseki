@@ -82,34 +82,34 @@ function sheetMaxShift(){
 }
 function setSheetShift(v,animate=true){
   sheetShift=Math.max(0,Math.min(sheetMaxShift(),v));
-  if(!animate) sheet.classList.add('dragging');
-  else sheet.classList.remove('dragging');
+  if(animate) sheet.classList.remove('dragging');
+  else sheet.classList.add('dragging');
   sheet.style.setProperty('--sheet-shift',sheetShift+'px');
 }
-handle.addEventListener('touchstart',e=>{
-  if(!e.touches[0]) return;
+
+/* 横棒だけを操作部にして、表示・収納のどちらもスライドで行う */
+handle.addEventListener('pointerdown',e=>{
   draggingSheet=true;
-  sheetStartY=e.touches[0].clientY;
+  sheetStartY=e.clientY;
   sheetStartShift=sheetShift;
   sheet.classList.add('dragging');
-},{passive:true});
-handle.addEventListener('touchmove',e=>{
-  if(!draggingSheet||!e.touches[0]) return;
-  const dy=e.touches[0].clientY-sheetStartY;
+  handle.setPointerCapture?.(e.pointerId);
+});
+handle.addEventListener('pointermove',e=>{
+  if(!draggingSheet) return;
+  const dy=e.clientY-sheetStartY;
   setSheetShift(sheetStartShift+dy,false);
-},{passive:true});
-handle.addEventListener('touchend',()=>{
+});
+function finishSheetDrag(){
   if(!draggingSheet) return;
   draggingSheet=false;
   sheet.classList.remove('dragging');
   const max=sheetMaxShift();
+  /* 上へ引けば表示、下へ引けば収納。途中で離しても必ずどちらかへ吸着 */
   setSheetShift(sheetShift > max*.28 ? max : 0,true);
-});
-handle.addEventListener('touchcancel',()=>{
-  draggingSheet=false;
-  sheet.classList.remove('dragging');
-  setSheetShift(sheetShift > sheetMaxShift()*.28 ? sheetMaxShift() : 0,true);
-});
+}
+handle.addEventListener('pointerup',finishSheetDrag);
+handle.addEventListener('pointercancel',finishSheetDrag);
 
 const map=L.map('map',{zoomControl:false}).setView([33.55,131.10],9);
 const standard=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(map);
