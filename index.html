@@ -11,7 +11,7 @@
 .top{position:fixed;top:12px;left:12px;right:12px;z-index:500;display:flex;justify-content:space-between;align-items:center;pointer-events:none}
 .title{background:rgba(255,255,255,.94);backdrop-filter:blur(10px);border-radius:16px;padding:10px 14px;font-weight:700;box-shadow:0 2px 14px #0002;pointer-events:auto}
 .actions{display:flex;gap:8px}.layerMenu{position:fixed;top:62px;right:12px;z-index:550;background:rgba(255,255,255,.97);backdrop-filter:blur(12px);border-radius:16px;padding:9px;box-shadow:0 4px 22px #0003;display:none;min-width:180px}.layerMenu.open{display:block}.layerTitle{font-size:12px;font-weight:700;color:#69717d;padding:3px 8px 7px}.layerChoice{display:block;width:100%;border:0;background:#fff;text-align:left;border-radius:11px;padding:10px 9px;font-size:13px}.layerChoice.active{background:#17202a;color:#fff}.layerNote{font-size:10px;color:#69717d;line-height:1.45;padding:8px 8px 2px}.btn{border:0;background:rgba(255,255,255,.95);width:42px;height:42px;border-radius:14px;box-shadow:0 2px 14px #0002;font-size:18px}
-.sheet{position:fixed;left:10px;right:10px;bottom:10px;z-index:600;background:rgba(255,255,255,.96);backdrop-filter:blur(14px);border-radius:22px;padding:12px;box-shadow:0 5px 30px #0003;max-height:43vh;overflow:auto;transform:translateY(var(--sheet-shift,0px));transition:transform .18s ease-out;touch-action:pan-y;will-change:transform;-webkit-overflow-scrolling:touch}
+.sheet{position:fixed;left:10px;right:10px;bottom:10px;z-index:600;background:rgba(255,255,255,.96);backdrop-filter:blur(14px);border-radius:22px;padding:12px;box-shadow:0 5px 30px #0003;max-height:43vh;overflow:auto;transform:translateY(var(--sheet-shift,0px));transition:transform .18s ease-out;touch-action:none;will-change:transform;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 .sheet.dragging{transition:none}
 .handle{width:38px;height:5px;background:#b9c0ca;border-radius:3px;margin:0 auto 10px;cursor:grab;touch-action:none}
 .filters{display:flex;gap:7px;overflow:auto;padding-bottom:8px}.chip{white-space:nowrap;border:1px solid #d9dde4;background:#fff;border-radius:20px;padding:7px 11px;font-size:13px}.chip.active{background:#17202a;color:white;border-color:#17202a}
@@ -118,43 +118,53 @@ function setSheetShift(v,animate=false){
   sheet.style.setProperty('--sheet-shift',sheetShift+'px');
 }
 
-/* シートは横棒だけでなく、上端付近をつかんで連続的に動かせる。
-   離した位置をそのまま保持し、勝手に開閉位置へ吸着させない。 */
+/* シートを触った瞬間にLeaflet地図へイベントを渡さず、
+   シート自身だけが指について動くようにする。 */
 function beginSheetDrag(e){
   if(e.pointerType==='mouse' && e.button!==0) return;
   if(e.target.closest('button, a, input, select, textarea')) return;
+
   draggingSheet=true;
   sheetStartY=e.clientY;
   sheetStartShift=sheetShift;
   sheet.classList.add('dragging');
-  e.currentTarget.setPointerCapture?.(e.pointerId);
+
+  e.preventDefault();
+  e.stopPropagation();
+  try{ sheet.setPointerCapture(e.pointerId); }catch(_){}
 }
 function moveSheetDrag(e){
   if(!draggingSheet) return;
+  e.preventDefault();
+  e.stopPropagation();
   const dy=e.clientY-sheetStartY;
   setSheetShift(sheetStartShift+dy,false);
 }
-function finishSheetDrag(){
+function finishSheetDrag(e){
   if(!draggingSheet) return;
+  if(e){ e.preventDefault(); e.stopPropagation(); }
   draggingSheet=false;
   sheet.classList.remove('dragging');
-  /* ここではスナップしない。指を離した場所を維持する。 */
+  /* 指を離した場所をそのまま保持する。自動吸着しない。 */
 }
 
-handle.addEventListener('pointerdown',beginSheetDrag);
-handle.addEventListener('pointermove',moveSheetDrag);
-handle.addEventListener('pointerup',finishSheetDrag);
-handle.addEventListener('pointercancel',finishSheetDrag);
+sheet.addEventListener('pointerdown',beginSheetDrag,{passive:false});
+sheet.addEventListener('pointermove',moveSheetDrag,{passive:false});
+sheet.addEventListener('pointerup',finishSheetDrag,{passive:false});
+sheet.addEventListener('pointercancel',finishSheetDrag,{passive:false});
 
-/* シート上端の余白もドラッグできるようにする */
-sheet.addEventListener('pointerdown',e=>{
-  if(e.target.closest('.handle')) return;
-  const r=sheet.getBoundingClientRect();
-  if(e.clientY-r.top<=54) beginSheetDrag(e);
-});
-sheet.addEventListener('pointermove',moveSheetDrag);
-sheet.addEventListener('pointerup',finishSheetDrag);
-sheet.addEventListener('pointercancel',finishSheetDrag);
+/* タッチ開始時にSafari/Leafletへスクロール・地図移動を渡さない */
+sheet.addEventListener('touchstart',e=>{
+  if(e.target.closest('button, a, input, select, textarea')) return;
+  e.preventDefault();
+  e.stopPropagation();
+},{passive:false});
+sheet.addEventListener('touchmove',e=>{
+  if(draggingSheet){
+    e.preventDefault();
+    e.stopPropagation();
+  }
+},{passive:false});
 
 window.addEventListener('resize',()=>{
   setSheetShift(sheetShift,true);
