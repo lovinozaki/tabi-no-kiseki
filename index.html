@@ -91,6 +91,7 @@ html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;font-fam
     <div class="status" id="startStatus"></div>
     <button class="action ghost" id="changeTripBtn">📖 別の旅を選択</button>
     <button class="action deleteTrip" id="deleteTripBtn">🗑 この旅を削除</button>
+    <button class="action ghost" id="backHomeBtn">× トップページへ戻る</button>
   </div>
 </div>
 
@@ -356,6 +357,12 @@ $("makeBtn").onclick=openCreate;
 $("chooseBtn").onclick=openChoose;
 $("changeTripBtn").onclick=openChoose;
 $("collapsedTopBtn").onclick=()=>{
+  activeTripId=null;
+  saveActive();
+  render();
+  requestAnimationFrame(()=>setSheetShift(0,true));
+};
+$("backHomeBtn").onclick=()=>{
   activeTripId=null;
   saveActive();
   render();
