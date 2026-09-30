@@ -25,6 +25,7 @@ html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;font-fam
 .name{font-weight:700;font-size:18px}
 .sub{font-size:13px;color:#69717d;margin-top:5px}
 .desc{font-size:14px;line-height:1.65;margin-top:14px}
+.tripNameEditBtn{margin:0 0 12px}
 .action{width:100%;border:0;border-radius:13px;padding:14px;margin-top:12px;font-size:15px;font-weight:700}
 .create{background:#1769aa;color:#fff}
 .select{background:#eef3ff;color:#1769aa}
@@ -82,6 +83,7 @@ html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;font-fam
       <button class="topBackBtn" id="tripTopBackBtn" aria-label="トップページへ戻る">×</button>
     </div>
     <div class="sub" id="tripDate"></div>
+    <button class="action ghost tripNameEditBtn" id="editTripNameBtn">旅の名前を変更</button>
     <div class="status">この旅を記録しています。</div>
     <button class="action create" id="setStartBtn">📍 スタート地点を設定</button>
     <div class="flow" id="flow">
@@ -116,6 +118,16 @@ html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;font-fam
       <div id="tripList"></div>
       <button class="action create" id="newTripFromListBtn">＋ 新しい旅を作成</button>
     </div>
+  </div>
+</div>
+
+<div class="modal" id="editTripNameModal">
+  <div class="box">
+    <button class="close" id="editTripNameClose">×</button>
+    <h2>旅の名前を変更</h2>
+    <div class="small">旅の名前</div>
+    <input class="input" id="editTripNameInput" placeholder="例：アラタF35岩国基地">
+    <button class="primary" id="saveTripNameBtn">変更を保存</button>
   </div>
 </div>
 
@@ -361,6 +373,24 @@ const goHome=()=>{
 $("tripTopBackBtn").onclick=goHome;
 $("backHomeBtn").onclick=goHome;
 $("saveTripBtn").onclick=createTrip;
+$("editTripNameBtn").onclick=()=>{
+  const t=activeTrip();
+  if(!t)return;
+  $("editTripNameInput").value=t.name||"";
+  $("editTripNameModal").classList.add("open");
+  requestAnimationFrame(()=>$("editTripNameInput").focus());
+};
+$("editTripNameClose").onclick=()=>$("editTripNameModal").classList.remove("open");
+$("editTripNameModal").onclick=e=>{if(e.target===$("editTripNameModal"))$("editTripNameModal").classList.remove("open")};
+$("saveTripNameBtn").onclick=()=>{
+  const t=activeTrip();
+  const name=$("editTripNameInput").value.trim();
+  if(!t||!name){$("editTripNameInput").focus();return}
+  t.name=name;
+  saveTrips();
+  $("editTripNameModal").classList.remove("open");
+  render();
+};
 $("newTripFromListBtn").onclick=openCreate;
 
 $("tripList").onclick=e=>{
