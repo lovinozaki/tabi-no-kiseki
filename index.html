@@ -228,7 +228,7 @@ function renderFlow(){
   }).join("");
 }
 function modeLabel(mode){
-  return ({car:"🚗 車",shinkansen:"🚅 新幹線",train:"🚃 電車",bus:"🚌 バス",walk:"🚶 徒歩",flight:"✈️ 飛行機"})[mode]||"移動";
+  return ({car:"車",shinkansen:"新幹線",train:"電車",bus:"バス",walk:"徒歩",flight:"飛行機"})[mode]||"移動";
 }
 function refreshStartStatus(){
   const t=activeTrip();
@@ -477,8 +477,8 @@ let sheetStartY=0,sheetStartShift=0,sheetShift=0,draggingSheet=false;
 let lastPointerY=0,lastPointerTime=0,pointerVelocity=0;
 
 function collapsedSheetHeight(){
-  const viewport=Math.max(document.documentElement.clientHeight,window.innerHeight||0);
-  return Math.floor(viewport*0.43);
+  // 下端ではシート本体をほぼ隠し、ハンドルだけを残す。
+  return 44;
 }
 function sheetMaxShift(){
   if(!sheet.classList.contains("editor")) return 0;
