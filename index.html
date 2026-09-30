@@ -13,12 +13,12 @@ html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;font-fam
 .title,.btn{background:#fff;border:0;border-radius:15px;box-shadow:0 2px 14px #0002}
 .title{padding:10px 14px;font-weight:700}
 .btn{width:42px;height:42px;font-size:18px}
-.sheet{position:absolute;left:10px;right:10px;bottom:8px;z-index:600;background:rgba(255,255,255,.96);backdrop-filter:blur(14px);border-radius:22px;padding:12px;box-shadow:0 5px 30px #0003;max-height:66dvh;overflow-y:auto;overflow-x:hidden;transform:translate3d(0,var(--sheet-shift,0px),0);transition:transform .18s ease-out;touch-action:pan-y;will-change:transform;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.sheet{position:absolute;left:0;right:0;width:calc(100% - 20px);margin-left:auto;margin-right:auto;bottom:8px;z-index:600;background:rgba(255,255,255,.96);backdrop-filter:blur(14px);border-radius:22px;padding:12px;box-shadow:0 5px 30px #0003;max-height:66dvh;overflow-y:auto;overflow-x:hidden;transform:translate3d(0,var(--sheet-shift,0px),0);transition:transform .18s ease-out;touch-action:pan-y;will-change:transform;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 .sheet.editor{height:calc(100% - 20px);max-height:none}
 .sheet.dragging{transition:none}
-.handle{width:auto;height:32px;margin:-12px -12px 0;padding:6px 0 4px;position:sticky;top:-12px;z-index:20;background:rgba(255,255,255,.98);touch-action:none;user-select:none;-webkit-user-select:none}
-.handle:after{content:"";position:absolute;left:calc(50% - 24px);width:48px;top:11px;height:5px;background:#b9c0ca;border-radius:3px}
-.sheetDivider{height:1px;background:#d8dce2;margin:0 2px 10px;position:sticky;top:20px;z-index:19;touch-action:none;user-select:none;-webkit-user-select:none}
+.handle{width:auto;height:34px;margin:-12px -12px 0;padding:7px 0 5px;position:sticky;top:0;z-index:50;background:rgba(255,255,255,.99);touch-action:none;user-select:none;-webkit-user-select:none}
+.handle:after{content:"";position:absolute;left:calc(50% - 24px);width:48px;top:12px;height:5px;background:#b9c0ca;border-radius:3px}
+.sheetDivider{height:1px;background:#d8dce2;margin:0 2px 10px;position:sticky;top:34px;z-index:49;touch-action:none;user-select:none;-webkit-user-select:none}
 .collapsedTripHeader{position:absolute;left:22px;right:22px;bottom:8px;height:64px;display:none;align-items:center;justify-content:space-between;padding:0 4px 4px;background:rgba(255,255,255,.98);border-radius:16px;z-index:700;box-shadow:0 5px 20px #0002;touch-action:none}
 .collapsedTripName{font-weight:700;font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:4px}
 .collapsedTopBtn{width:40px;height:40px;border:0;border-radius:50%;background:#f0f1f3;color:#3b82d0;font-size:25px;line-height:40px;flex:0 0 auto}
