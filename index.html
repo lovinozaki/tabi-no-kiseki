@@ -264,56 +264,83 @@ if(!activeTripId && trips.length===1){
 render();
 
 const sheet=$("sheet");
-const handle=$(".handle");
 let sheetStartY=0,sheetStartShift=0,sheetShift=0,draggingSheet=false;
-function sheetMaxShift(){return Math.max(0,sheet.offsetHeight-48)}
+let lastPointerY=0,lastPointerTime=0,pointerVelocity=0;
+
+function sheetMaxShift(){
+  return Math.max(0,sheet.offsetHeight-48);
+}
 function setSheetShift(v,animate=false){
   sheetShift=Math.max(0,Math.min(sheetMaxShift(),v));
-  if(animate) sheet.classList.remove("dragging"); else sheet.classList.add("dragging");
+  sheet.classList.toggle("dragging",!animate);
   sheet.style.setProperty("--sheet-shift",sheetShift+"px");
 }
-sheet.classList.add("gestureBoundary");
-if(window.L&&L.DomEvent){L.DomEvent.disableClickPropagation(sheet);L.DomEvent.disableScrollPropagation(sheet)}
-function isInteractiveTarget(el){return !!el?.closest("button, a, input, select, textarea")}
-let lastPointerY=0,lastPointerTime=0,pointerVelocity=0;
+function isInteractiveTarget(el){
+  return !!el.closest("button,a,input,select,textarea");
+}
 function beginSheetDrag(e){
-  if(isInteractiveTarget(e.target))return;
-  if(e.pointerType==="mouse"&&e.button!==0)return;
-  draggingSheet=true;sheetStartY=e.clientY;sheetStartShift=sheetShift;
-  lastPointerY=e.clientY;lastPointerTime=performance.now();pointerVelocity=0;
-  sheet.classList.add("dragging");e.preventDefault();e.stopPropagation();
+  if(isInteractiveTarget(e.target)) return;
+  if(e.pointerType==="mouse" && e.button!==0) return;
+
+  draggingSheet=true;
+  sheetStartY=e.clientY;
+  sheetStartShift=sheetShift;
+  lastPointerY=e.clientY;
+  lastPointerTime=performance.now();
+  pointerVelocity=0;
+
+  sheet.classList.add("dragging");
   try{sheet.setPointerCapture(e.pointerId)}catch(_){}
+  e.preventDefault();
 }
 function moveSheetDrag(e){
-  if(!draggingSheet)return;
-  e.preventDefault();e.stopPropagation();
-  const now=performance.now(),dt=Math.max(8,now-lastPointerTime),dy=e.clientY-lastPointerY;
-  pointerVelocity=dy/dt;lastPointerY=e.clientY;lastPointerTime=now;
-  let next=sheetStartShift+(e.clientY-sheetStartY),max=sheetMaxShift();
-  if(next<0)next=next*.18;
-  if(next>max)next=max+(next-max)*.18;
+  if(!draggingSheet) return;
+
+  const now=performance.now();
+  const dt=Math.max(8,now-lastPointerTime);
+  const dy=e.clientY-lastPointerY;
+
+  pointerVelocity=dy/dt;
+  lastPointerY=e.clientY;
+  lastPointerTime=now;
+
+  let next=sheetStartShift+(e.clientY-sheetStartY);
+  const max=sheetMaxShift();
+
+  if(next<0) next*=0.18;
+  if(next>max) next=max+(next-max)*0.18;
+
   setSheetShift(next,false);
+  e.preventDefault();
 }
 function finishSheetDrag(e){
-  if(!draggingSheet)return;
-  if(e){e.preventDefault();e.stopPropagation();}
+  if(!draggingSheet) return;
+
   const max=sheetMaxShift();
   let target;
-  if(pointerVelocity<-.45)target=0;
-  else if(pointerVelocity>.45)target=max;
-  else target=sheetShift<max/2?0:max;
-  draggingSheet=false;sheet.classList.remove("dragging");setSheetShift(target,true);
+
+  if(pointerVelocity < -0.45) target=0;
+  else if(pointerVelocity > 0.45) target=max;
+  else target=sheetShift < max/2 ? 0 : max;
+
+  draggingSheet=false;
+  sheet.classList.remove("dragging");
+  setSheetShift(target,true);
+
+  try{sheet.releasePointerCapture(e.pointerId)}catch(_){}
+  e.preventDefault();
 }
-sheet.addEventListener("pointerdown",beginSheetDrag,{capture:true,passive:false});
-sheet.addEventListener("pointermove",moveSheetDrag,{capture:true,passive:false});
-sheet.addEventListener("pointerup",finishSheetDrag,{capture:true,passive:false});
-sheet.addEventListener("pointercancel",finishSheetDrag,{capture:true,passive:false});
-sheet.addEventListener("touchstart",e=>{if(isInteractiveTarget(e.target))return;e.stopPropagation()},{capture:true,passive:false});
-sheet.addEventListener("touchmove",e=>{if(draggingSheet){e.preventDefault();e.stopPropagation()}},{capture:true,passive:false});
-sheet.addEventListener("touchend",e=>{if(draggingSheet)e.stopPropagation()},{capture:true,passive:false});
+
+sheet.addEventListener("pointerdown",beginSheetDrag,{passive:false});
+sheet.addEventListener("pointermove",moveSheetDrag,{passive:false});
+sheet.addEventListener("pointerup",finishSheetDrag,{passive:false});
+sheet.addEventListener("pointercancel",finishSheetDrag,{passive:false});
+
 window.addEventListener("resize",()=>{
-  const max=sheetMaxShift();
-  setSheetShift(sheetShift<max/2?0:max,true);
+  requestAnimationFrame(()=>{
+    const max=sheetMaxShift();
+    setSheetShift(sheetShift < max/2 ? 0 : max,true);
+  });
 });
 </script>
 </body>
