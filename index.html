@@ -468,7 +468,14 @@ document.getElementById('planRouteModalBtn').onclick=()=>{
   newTripModal.classList.add('open');
 };
 const layerMenu=document.getElementById('layerMenu');
-document.getElementById('layerBtn').onclick=()=>layerMenu.classList.toggle('open');
+document.getElementById('layerBtn').onclick=()=>{
+  const wanted=currentBase==='standard'?'aerial':'standard';
+  const btn=document.querySelector('.layerChoice[data-layer="'+wanted+'"]');
+  if(btn) btn.click();
+  const layerBtn=document.getElementById('layerBtn');
+  layerBtn.textContent=currentBase==='aerial'?'🛰️':'🗺️';
+  layerBtn.title=currentBase==='aerial'?'標準地図に戻す':'航空写真に切り替える';
+};
 document.querySelectorAll('.layerChoice').forEach(btn=>{
   btn.onclick=()=>{
     const wanted=btn.dataset.layer;
@@ -489,6 +496,9 @@ document.querySelectorAll('.layerChoice').forEach(btn=>{
     }
     document.querySelectorAll('.layerChoice').forEach(x=>x.classList.toggle('active',x===btn));
     layerMenu.classList.remove('open');
+    const layerBtn=document.getElementById('layerBtn');
+    layerBtn.textContent=currentBase==='aerial'?'🛰️':'🗺️';
+    layerBtn.title=currentBase==='aerial'?'標準地図に戻す':'航空写真に切り替える';
   };
 });
 document.getElementById('locBtn').onclick=()=>{
