@@ -13,14 +13,15 @@ html,body{margin:0;height:100%;font-family:-apple-system,BlinkMacSystemFont,"Hel
 .title,.btn{background:#fff;border:0;border-radius:15px;box-shadow:0 2px 14px #0002}
 .title{padding:10px 14px;font-weight:700}
 .btn{width:42px;height:42px;font-size:18px}
-.sheet{position:fixed;left:10px;right:10px;bottom:10px;z-index:600;background:rgba(255,255,255,.96);backdrop-filter:blur(14px);border-radius:22px;padding:12px;box-shadow:0 5px 30px #0003;max-height:66dvh;overflow:auto;transform:translate3d(0,var(--sheet-shift,0px),0);transition:transform .18s ease-out;touch-action:none;will-change:transform;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.sheet{position:fixed;left:10px;right:10px;bottom:10px;z-index:600;background:rgba(255,255,255,.96);backdrop-filter:blur(14px);border-radius:22px;padding:12px;box-shadow:0 5px 30px #0003;max-height:66dvh;overflow-y:auto;overflow-x:hidden;transform:translate3d(0,var(--sheet-shift,0px),0);transition:transform .18s ease-out;touch-action:pan-y;will-change:transform;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 .sheet.editor{height:calc(100dvh - 20px);max-height:none}
 .sheet.dragging{transition:none}
 .handle{width:48px;height:22px;margin:-6px auto 4px;position:relative}
 .handle:after{content:"";position:absolute;left:5px;right:5px;top:8px;height:5px;background:#b9c0ca;border-radius:3px}
-.collapsedTripHeader{height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 2px 2px}
+.collapsedTripHeader{height:48px;display:none;align-items:center;justify-content:space-between;padding:0 2px 2px}
 .collapsedTripName{font-weight:700;font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:4px}
 .collapsedTopBtn{width:40px;height:40px;border:0;border-radius:50%;background:#f0f1f3;color:#3b82d0;font-size:25px;line-height:40px;flex:0 0 auto}
+.sheet.collapsed .collapsedTripHeader{display:flex}
 .name{font-weight:700;font-size:18px}
 .sub{font-size:13px;color:#69717d;margin-top:5px}
 .desc{font-size:14px;line-height:1.65;margin-top:14px}
@@ -502,10 +503,7 @@ const sheet=$("sheet");
 let sheetStartY=0,sheetStartShift=0,sheetShift=0,draggingSheet=false;
 let lastPointerY=0,lastPointerTime=0,pointerVelocity=0;
 
-function collapsedSheetHeight(){
-  // 下端ではシート本体をほぼ隠し、ハンドルだけを残す。
-  return 82;
-}
+function collapsedSheetHeight(){ return 82; }
 function sheetMaxShift(){
   if(!sheet.classList.contains("editor")) return 0;
   return Math.max(0,sheet.offsetHeight-collapsedSheetHeight());
@@ -514,15 +512,17 @@ function setSheetShift(v,animate=false){
   const max=sheetMaxShift();
   sheetShift=Math.max(0,Math.min(max,v));
   sheet.classList.toggle("dragging",!animate);
+  sheet.classList.toggle("collapsed",max>0 && sheetShift>=max-2);
   sheet.style.setProperty("--sheet-shift",sheetShift+"px");
 }
 function isInteractiveTarget(el){
-  return !!el.closest("button,a,input,select,textarea") || !!el.closest(".collapsedTripHeader");
+  return !!el.closest("button,a,input,select,textarea");
 }
 function beginSheetDrag(e){
+  // シートの中身は通常スクロールさせ、移動操作はバー部分から行う。
+  if(!e.target.closest(".handle,.collapsedTripHeader")) return;
   if(isInteractiveTarget(e.target)) return;
-  if(e.pointerType==="mouse" && e.button!==0) return;
-
+  if(e.pointerType==="mouse"&&e.button!==0)return;
   draggingSheet=true;
   sheetStartY=e.clientY;
   sheetStartShift=sheetShift;
@@ -535,40 +535,31 @@ function beginSheetDrag(e){
 }
 function moveSheetDrag(e){
   if(!draggingSheet)return;
-
-  const now=performance.now();
-  const dt=Math.max(8,now-lastPointerTime);
+  const now=performance.now(),dt=Math.max(8,now-lastPointerTime);
   const dy=e.clientY-lastPointerY;
-
   pointerVelocity=dy/dt;
   lastPointerY=e.clientY;
   lastPointerTime=now;
-
   let next=sheetStartShift+(e.clientY-sheetStartY);
   const max=sheetMaxShift();
-
   if(next<0)next*=.18;
   if(next>max)next=max+(next-max)*.18;
-
   setSheetShift(next,false);
   e.preventDefault();
 }
 function finishSheetDrag(e){
   if(!draggingSheet)return;
-
   const max=sheetMaxShift();
   let target;
   if(pointerVelocity<-.45)target=0;
   else if(pointerVelocity>.45)target=max;
   else target=sheetShift<max/2?0:max;
-
   draggingSheet=false;
   sheet.classList.remove("dragging");
   setSheetShift(target,true);
   try{sheet.releasePointerCapture(e.pointerId)}catch(_){}
   e.preventDefault();
 }
-
 sheet.addEventListener("pointerdown",beginSheetDrag,{passive:false});
 sheet.addEventListener("pointermove",moveSheetDrag,{passive:false});
 sheet.addEventListener("pointerup",finishSheetDrag,{passive:false});
@@ -577,6 +568,7 @@ sheet.addEventListener("pointercancel",finishSheetDrag,{passive:false});
 function normalizeSheetPosition(){
   const max=sheetMaxShift();
   sheetShift=Math.max(0,Math.min(max,sheetShift));
+  sheet.classList.toggle("collapsed",max>0&&sheetShift>=max-2);
   sheet.style.setProperty("--sheet-shift",sheetShift+"px");
 }
 window.addEventListener("resize",()=>requestAnimationFrame(normalizeSheetPosition));
