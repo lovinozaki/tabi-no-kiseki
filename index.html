@@ -18,10 +18,11 @@ html,body{margin:0;height:100%;font-family:-apple-system,BlinkMacSystemFont,"Hel
 .sheet.dragging{transition:none}
 .handle{width:48px;height:22px;margin:-6px auto 4px;position:relative}
 .handle:after{content:"";position:absolute;left:5px;right:5px;top:8px;height:5px;background:#b9c0ca;border-radius:3px}
-.collapsedTripHeader{height:48px;display:none;align-items:center;justify-content:space-between;padding:0 2px 2px}
+.collapsedTripHeader{height:64px;display:none;align-items:center;justify-content:space-between;padding:0 4px 4px}
 .collapsedTripName{font-weight:700;font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:4px}
 .collapsedTopBtn{width:40px;height:40px;border:0;border-radius:50%;background:#f0f1f3;color:#3b82d0;font-size:25px;line-height:40px;flex:0 0 auto}
 .sheet.collapsed .collapsedTripHeader{display:flex}
+.sheet:not(.collapsed) .collapsedTripHeader{display:none}
 .name{font-weight:700;font-size:18px}
 .sub{font-size:13px;color:#69717d;margin-top:5px}
 .desc{font-size:14px;line-height:1.65;margin-top:14px}
@@ -503,7 +504,7 @@ const sheet=$("sheet");
 let sheetStartY=0,sheetStartShift=0,sheetShift=0,draggingSheet=false;
 let lastPointerY=0,lastPointerTime=0,pointerVelocity=0;
 
-function collapsedSheetHeight(){ return 82; }
+function collapsedSheetHeight(){ return 88; }
 function sheetMaxShift(){
   if(!sheet.classList.contains("editor")) return 0;
   return Math.max(0,sheet.offsetHeight-collapsedSheetHeight());
@@ -513,6 +514,7 @@ function setSheetShift(v,animate=false){
   sheetShift=Math.max(0,Math.min(max,v));
   sheet.classList.toggle("dragging",!animate);
   sheet.classList.toggle("collapsed",max>0 && sheetShift>=max-2);
+  if(!sheet.classList.contains("collapsed")) sheet.classList.remove("collapsed");
   sheet.style.setProperty("--sheet-shift",sheetShift+"px");
 }
 function isInteractiveTarget(el){
