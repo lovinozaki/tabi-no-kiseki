@@ -219,33 +219,121 @@ document.getElementById('locBtn').onclick=()=>{
   navigator.geolocation.getCurrentPosition(p=>map.setView([p.coords.latitude,p.coords.longitude],14),()=>alert('現在地を取得できませんでした。'));
 };
 
-const sheet=document.querySelector('.sheet'),handle=document.querySelector('.handle');
-let sheetShift=0,sheetStartY=0,sheetStartShift=0,dragging=false,lastY=0,lastT=0,velocity=0;
-function maxShift(){return Math.max(0,sheet.offsetHeight-48)}
-function setShift(v,animate){const m=maxShift();sheetShift=Math.max(0,Math.min(m,v));sheet.style.setProperty('--sheet-shift',sheetShift+'px');if(animate)sheet.classList.remove('dragging');else sheet.classList.add('dragging')}
-function down(e){
-  dragging=true;sheetStartY=e.clientY;sheetStartShift=sheetShift;lastY=e.clientY;lastT=performance.now();velocity=0;
-  sheet.classList.add('dragging');e.preventDefault();
-  try{handle.setPointerCapture(e.pointerId)}catch(_){}
+const sheet=document.querySelector('.sheet');
+const handle=document.querySelector('.handle');
+let sheetStartY=0,sheetStartShift=0,sheetShift=0,draggingSheet=false;
+
+function sheetMaxShift(){
+  return Math.max(0,sheet.offsetHeight-48);
 }
-function move(e){
-  if(!dragging)return;e.preventDefault();
-  const n=performance.now(),dt=Math.max(8,n-lastT);
-  velocity=(e.clientY-lastY)/dt;lastY=e.clientY;lastT=n;
-  let v=sheetStartShift+(e.clientY-sheetStartY),m=maxShift();
-  if(v<0)v*=.18;if(v>m)v=m+(v-m)*.18;setShift(v,false)
+function setSheetShift(v,animate=false){
+  sheetShift=Math.max(0,Math.min(sheetMaxShift(),v));
+  if(animate) sheet.classList.remove('dragging');
+  else sheet.classList.add('dragging');
+  sheet.style.setProperty('--sheet-shift',sheetShift+'px');
 }
-function up(e){
-  if(!dragging)return;e.preventDefault();
-  const m=maxShift();
-  let target=velocity<-.45?0:velocity>.45?m:(sheetShift<m/2?0:m);
-  dragging=false;setShift(target,true)
+
+/* シートは2状態だけ：
+   1) シート表示
+   2) バーだけ残して地図メイン
+   中間位置では止まらず、スライド後にどちらかへ吸着します。 */
+sheet.classList.add('gestureBoundary');
+
+if(window.L && L.DomEvent){
+  L.DomEvent.disableClickPropagation(sheet);
+  L.DomEvent.disableScrollPropagation(sheet);
 }
-handle.addEventListener('pointerdown',down,{passive:false});
-handle.addEventListener('pointermove',move,{passive:false});
-handle.addEventListener('pointerup',up,{passive:false});
-handle.addEventListener('pointercancel',up,{passive:false});
-window.addEventListener('resize',()=>setShift(sheetShift<maxShift()/2?0:maxShift(),true));
+
+function isInteractiveTarget(el){
+  return !!el?.closest('button, a, input, select, textarea');
+}
+
+let lastPointerY=0,lastPointerTime=0,pointerVelocity=0;
+
+function beginSheetDrag(e){
+  if(isInteractiveTarget(e.target)) return;
+  if(e.pointerType==='mouse' && e.button!==0) return;
+
+  draggingSheet=true;
+  sheetStartY=e.clientY;
+  sheetStartShift=sheetShift;
+  lastPointerY=e.clientY;
+  lastPointerTime=performance.now();
+  pointerVelocity=0;
+  sheet.classList.add('dragging');
+
+  e.preventDefault();
+  e.stopPropagation();
+  try{sheet.setPointerCapture(e.pointerId)}catch(_){}
+}
+
+function moveSheetDrag(e){
+  if(!draggingSheet) return;
+  e.preventDefault();
+  e.stopPropagation();
+
+  const now=performance.now();
+  const dt=Math.max(8,now-lastPointerTime);
+  const dy=e.clientY-lastPointerY;
+  pointerVelocity=dy/dt;
+  lastPointerY=e.clientY;
+  lastPointerTime=now;
+
+  let next=sheetStartShift+(e.clientY-sheetStartY);
+  const max=sheetMaxShift();
+
+  if(next<0) next=next*.18;
+  if(next>max) next=max+(next-max)*.18;
+
+  setSheetShift(next,false);
+}
+
+function finishSheetDrag(e){
+  if(!draggingSheet) return;
+  if(e){e.preventDefault();e.stopPropagation();}
+
+  const max=sheetMaxShift();
+  let target;
+
+  /* 強いスワイプを優先し、それ以外は近い状態へ */
+  if(pointerVelocity < -0.45){
+    target=0;
+  }else if(pointerVelocity > 0.45){
+    target=max;
+  }else{
+    target=sheetShift < max/2 ? 0 : max;
+  }
+
+  draggingSheet=false;
+  sheet.classList.remove('dragging');
+  setSheetShift(target,true);
+}
+
+sheet.addEventListener('pointerdown',beginSheetDrag,{capture:true,passive:false});
+sheet.addEventListener('pointermove',moveSheetDrag,{capture:true,passive:false});
+sheet.addEventListener('pointerup',finishSheetDrag,{capture:true,passive:false});
+sheet.addEventListener('pointercancel',finishSheetDrag,{capture:true,passive:false});
+
+sheet.addEventListener('touchstart',e=>{
+  if(isInteractiveTarget(e.target)) return;
+  e.stopPropagation();
+},{capture:true,passive:false});
+
+sheet.addEventListener('touchmove',e=>{
+  if(draggingSheet){
+    e.preventDefault();
+    e.stopPropagation();
+  }
+},{capture:true,passive:false});
+
+sheet.addEventListener('touchend',e=>{
+  if(draggingSheet) e.stopPropagation();
+},{capture:true,passive:false});
+
+window.addEventListener('resize',()=>{
+  const max=sheetMaxShift();
+  setSheetShift(sheetShift < max/2 ? 0 : max,true);
+});
 
 const tripModal=document.getElementById('tripModal');
 document.getElementById('tripClose').onclick=()=>tripModal.classList.remove('open');
