@@ -45,81 +45,31 @@
 <div class="sheet">
   <div class="handle"></div>
   <div class="triphead">
-    <div><div class="tripname" id="tripName">アラタF35岩国基地</div><div class="date" id="tripDate">2026年9月23日 ・ 記録帳</div></div>
-    <div>🚗</div>
+    <div><div class="tripname">旅の軌跡</div><div class="date">あなたの旅を、地図に残します。</div></div>
   </div>
-  <div class="badges"><span class="badge">📍 場所</span><span class="badge">🛣️ 移動</span><span class="badge">📷 思い出</span></div>
-  <div class="route">旅が終わってから、地図を見ながら思い出を辿って場所を追加します。追加した点と点の間は、道路ネットワークに沿った線として描きます。</div>
-  <button class="addPlaceBtn" id="addPlaceBtn">＋ 行った場所を地図で選ぶ</button>
-  <div class="searchRow">
-    <input id="placeSearchInput" class="searchInput" type="search" placeholder="場所の名前を入力（例：錦帯橋）" enterkeyhint="search">
-    <button class="searchBtn" id="placeSearchBtn">🔎 検索</button>
-  </div>
-  <div class="searchHint">文字で探すとGoogleマップで場所を確認できます。戻ってから地図上の場所をタップして記録します。</div>
-  <div class="placeList" id="placeList"></div>
-  <div class="notice" id="routeStatus">場所を順番に追加すると、移動の線を再現します。道路ルートは現在、検証用の仕組みです。本番では利用条件を確認した無料・適法な方式だけを採用します。</div>
+  <div class="route">旅が終わったあと、地図を見ながら<br>行った場所や思い出を少しずつ残していきます。</div>
+  <button class="addPlaceBtn" id="createTripStartBtn">＋ 旅を作成</button>
+  <button class="googlebtn" id="selectTripStartBtn">📖 旅を選択</button>
 </div>
 
-<div class="modal" id="placeModal">
+<div class="modal" id="tripStartModal">
   <div class="modalbox">
-    <button class="close" id="placeClose">×</button>
-    <h2>行った場所を記録</h2>
-    <p class="small">地図上で行った場所をタップして選びます。文字で探したい場合は下の検索からGoogleマップを開けます。</p>
-    <label class="small">場所の名前</label>
-    <input id="placeNameInput" class="tripInput" type="text" placeholder="例：岩国基地">
-    <div class="searchRow" style="margin-top:-4px">
-      <input id="modalPlaceSearchInput" class="searchInput" type="search" placeholder="文字で場所を探す">
-      <button class="searchBtn" id="modalPlaceSearchBtn">🔎</button>
-    </div>
-    <div class="searchHint">検索はGoogleマップで行います。場所を確認したら戻って、地図をタップして記録できます。</div>
-    <label class="small">移動手段</label>
-    <div class="transportOptions" id="transportOptions">
-      <button type="button" class="transportChoice active" data-mode="car">🚗 車</button>
-      <button type="button" class="transportChoice" data-mode="train">🚆 電車</button>
-      <button type="button" class="transportChoice" data-mode="bus">🚌 バス</button>
-      <button type="button" class="transportChoice" data-mode="walk">🚶 徒歩</button>
-    </div>
-    <button class="planbtn" id="savePlaceBtn">📍 この場所を旅の記憶に追加</button>
-    <button class="googlebtn" id="placeGoogleBtn">Googleマップでこの場所を確認</button>
-    <p class="small" style="margin-top:10px">※Googleマップは場所を調べるために使い、旅の軌跡側には「自分が行った場所」だけを残します。</p>
-  </div>
-</div>
-
-<div class="modal" id="tripModal">
-  <div class="modalbox">
-    <button class="close" id="tripClose">×</button>
-    <h2>新しい旅の記憶帳</h2>
-    <p class="small">旅行中ではなく、帰宅後にゆっくり作る前提です。</p>
+    <button class="close" id="tripStartClose">×</button>
+    <h2 id="startModalTitle">旅を作成</h2>
+    <p class="small">帰宅後に思い出を辿りながら、旅の記憶帳を作ります。</p>
     <label class="small">旅の名前</label>
-    <input id="tripNameInput" class="tripInput" value="新しい旅">
-    <label class="small">日付</label>
+    <input id="tripNameInput" class="tripInput" type="text" placeholder="例：アラタF35岩国基地">
+    <label class="small">旅の日付</label>
     <input id="tripDateInput" class="tripInput" type="date">
-    <button class="planbtn" id="createTripBtn">この旅の記憶帳を作る</button>
+    <button class="planbtn" id="createTripBtn">この旅を作成する</button>
+    <div id="tripSelectArea" style="display:none">
+      <div class="small" style="margin-top:16px">作成した旅はここから選択できます。</div>
+      <div id="tripSelectList" class="placeList"></div>
+    </div>
   </div>
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script>
-const map=L.map('map',{zoomControl:false}).setView([33.95,131.25],8);
-const standard=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(map);
-let currentBase='standard';
-
-const samplePlaces=[
- {name:'周南市下上',lat:34.0344,lng:131.8276,mode:'car'},
- {name:'岩国基地',lat:34.1439,lng:132.2359,mode:'car'}
-];
-let places=[...samplePlaces];
-let routeLines=[];
-let selectedLatLng=null;
-let selectedMode='car';
-
-function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function modeLabel(m){return ({car:'🚗 車',train:'🚆 電車',bus:'🚌 バス',walk:'🚶 徒歩'})[m]||'🚗 車';}
-function drawPointMarkers(){
-  if(window.placeMarkers) window.placeMarkers.forEach(m=>map.removeLayer(m));
-  window.placeMarkers=places.map((p,i)=>L.circleMarker([p.lat,p.lng],{radius:8,color:'#fff',weight:3,fillColor:'#1769aa',fillOpacity:1}).addTo(map).bindPopup('<b>'+esc(p.name)+'</b><br>'+modeLabel(p.mode)));
-}
-function renderPlaceList(){
+laceList(){
   const el=document.getElementById('placeList');
   el.innerHTML=places.map((p,i)=>'<div class="placeRow"><span class="dot"></span><div><div class="placeName">'+esc(p.name)+'</div><div class="placeMeta">'+(i?'前の場所から '+modeLabel(p.mode):'旅の出発点')+'</div></div></div>').join('');
 }
@@ -345,6 +295,36 @@ document.getElementById('createTripBtn').onclick=()=>{
   document.getElementById('routeStatus').textContent='地図をタップして、旅の思い出を一つずつ置いていきましょう。';
 };
 document.getElementById('tripName').onclick=()=>tripModal.classList.add('open');
+</script>
+</body>
+</html<script>
+const map=L.map('map',{zoomControl:false}).setView([33.95,131.25],8);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(map);
+document.getElementById('locBtn').onclick=()=>{if(!navigator.geolocation){alert('この端末では現在地機能を利用できません。');return}navigator.geolocation.getCurrentPosition(p=>map.setView([p.coords.latitude,p.coords.longitude],14),()=>alert('現在地を取得できませんでした。'))};
+
+/* 2状態のシート：シート表示 ↔ 地図メイン */
+const sheet=document.querySelector('.sheet');
+let sheetStartY=0,sheetStartShift=0,sheetShift=0,draggingSheet=false,lastPointerY=0,lastPointerTime=0,pointerVelocity=0;
+function sheetMaxShift(){return Math.max(0,sheet.offsetHeight-48)}
+function setSheetShift(v,animate=false){sheetShift=Math.max(0,Math.min(sheetMaxShift(),v));if(animate)sheet.classList.remove('dragging');else sheet.classList.add('dragging');sheet.style.setProperty('--sheet-shift',sheetShift+'px')}
+sheet.classList.add('gestureBoundary');
+if(window.L&&L.DomEvent){L.DomEvent.disableClickPropagation(sheet);L.DomEvent.disableScrollPropagation(sheet)}
+function interactive(el){return !!el?.closest('button,a,input,select,textarea')}
+function down(e){if(interactive(e.target)||(e.pointerType==='mouse'&&e.button!==0))return;draggingSheet=true;sheetStartY=e.clientY;sheetStartShift=sheetShift;lastPointerY=e.clientY;lastPointerTime=performance.now();pointerVelocity=0;sheet.classList.add('dragging');e.preventDefault();e.stopPropagation();try{sheet.setPointerCapture(e.pointerId)}catch(_){}}
+function move(e){if(!draggingSheet)return;e.preventDefault();e.stopPropagation();const now=performance.now(),dt=Math.max(8,now-lastPointerTime);pointerVelocity=(e.clientY-lastPointerY)/dt;lastPointerY=e.clientY;lastPointerTime=now;let next=sheetStartShift+(e.clientY-sheetStartY),max=sheetMaxShift();if(next<0)next*=.18;if(next>max)next=max+(next-max)*.18;setSheetShift(next,false)}
+function up(e){if(!draggingSheet)return;if(e){e.preventDefault();e.stopPropagation()}const max=sheetMaxShift();const target=pointerVelocity<-.45?0:pointerVelocity>.45?max:(sheetShift<max/2?0:max);draggingSheet=false;sheet.classList.remove('dragging');setSheetShift(target,true)}
+sheet.addEventListener('pointerdown',down,{capture:true,passive:false});sheet.addEventListener('pointermove',move,{capture:true,passive:false});sheet.addEventListener('pointerup',up,{capture:true,passive:false});sheet.addEventListener('pointercancel',up,{capture:true,passive:false});
+sheet.addEventListener('touchstart',e=>{if(interactive(e.target))return;e.stopPropagation()},{capture:true,passive:false});sheet.addEventListener('touchmove',e=>{if(draggingSheet){e.preventDefault();e.stopPropagation()}},{capture:true,passive:false});sheet.addEventListener('touchend',e=>{if(draggingSheet)e.stopPropagation()},{capture:true,passive:false});
+window.addEventListener('resize',()=>{const max=sheetMaxShift();setSheetShift(sheetShift<max/2?0:max,true)});
+
+const modal=document.getElementById('tripStartModal'),nameInput=document.getElementById('tripNameInput'),dateInput=document.getElementById('tripDateInput'),createBtn=document.getElementById('createTripBtn'),selectArea=document.getElementById('tripSelectArea'),selectList=document.getElementById('tripSelectList');
+let trips=[];
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function createOpen(){document.getElementById('startModalTitle').textContent='旅を作成';selectArea.style.display='none';createBtn.style.display='block';nameInput.value='';dateInput.value='';modal.classList.add('open')}
+function selectOpen(){document.getElementById('startModalTitle').textContent='旅を選択';createBtn.style.display='none';selectArea.style.display='block';selectList.innerHTML=trips.length?trips.map((t,i)=>'<button class="placeBtn" style="display:block;width:100%;margin:6px 0;text-align:left" data-i="'+i+'">📖 '+esc(t.name)+'<div class="small">'+esc(t.date||'日付未設定')+'</div></button>').join(''):'<div class="small" style="padding:12px 2px">まだ旅がありません。まず「旅を作成」してください。</div>';selectList.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{const t=trips[+b.dataset.i];modal.classList.remove('open');document.querySelector('.tripname').textContent=t.name;document.querySelector('.date').textContent=t.date||'日付未設定'});modal.classList.add('open')}
+document.getElementById('createTripStartBtn').onclick=createOpen;document.getElementById('selectTripStartBtn').onclick=selectOpen;document.getElementById('tripStartClose').onclick=()=>modal.classList.remove('open');
+createBtn.onclick=()=>{const name=nameInput.value.trim();if(!name){nameInput.focus();return}trips.push({name,date:dateInput.value});modal.classList.remove('open');document.querySelector('.tripname').textContent=name;document.querySelector('.date').textContent=dateInput.value||'日付未設定'};
+modal.onclick=e=>{if(e.target===modal)modal.classList.remove('open')};
 </script>
 </body>
 </html>
