@@ -218,7 +218,8 @@ const stationCoords={
   "熊本駅":[32.7898,130.6885],
   "新八代駅":[32.5228,130.6438],
   "新水俣駅":[32.1960,130.4360],
-  "鹿児島中央駅":[31.5830,130.5410]
+  "鹿児島中央駅":[31.5830,130.5410],
+  "指宿駅":[31.2450,130.6330]
 };
 const shinkansenSegments={
   "徳山駅→博多駅":[
@@ -260,6 +261,9 @@ function drawJourney(){
                 a.place.name==="博多駅"&&b.place.name==="鹿児島中央駅"?"博多駅→鹿児島中央駅":null;
       const route=key?shinkansenSegments[key]:[a.coord,b.coord];
       L.polyline(route,{weight:5,opacity:.85}).addTo(journeyLayer);
+    }else if(b.place.mode==="car"){
+      // 車ルートはまず座標間を結ぶ試作線。道路形状の再現は次段階。
+      L.polyline([a.coord,b.coord],{weight:5,opacity:.85}).addTo(journeyLayer);
     }
   }
 }
