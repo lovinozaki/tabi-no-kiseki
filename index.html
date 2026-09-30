@@ -18,6 +18,9 @@ html,body{margin:0;height:100%;font-family:-apple-system,BlinkMacSystemFont,"Hel
 .sheet.dragging{transition:none}
 .handle{width:48px;height:22px;margin:-6px auto 4px;position:relative}
 .handle:after{content:"";position:absolute;left:5px;right:5px;top:8px;height:5px;background:#b9c0ca;border-radius:3px}
+.collapsedTripHeader{height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 2px 2px}
+.collapsedTripName{font-weight:700;font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:4px}
+.collapsedTopBtn{width:40px;height:40px;border:0;border-radius:50%;background:#f0f1f3;color:#3b82d0;font-size:25px;line-height:40px;flex:0 0 auto}
 .name{font-weight:700;font-size:18px}
 .sub{font-size:13px;color:#69717d;margin-top:5px}
 .desc{font-size:14px;line-height:1.65;margin-top:14px}
@@ -63,6 +66,10 @@ html,body{margin:0;height:100%;font-family:-apple-system,BlinkMacSystemFont,"Hel
 
 <div class="sheet" id="sheet">
   <div class="handle"></div>
+  <div class="collapsedTripHeader" id="collapsedTripHeader">
+    <div class="collapsedTripName" id="collapsedTripName"></div>
+    <button class="collapsedTopBtn" id="collapsedTopBtn" aria-label="トップページへ戻る">×</button>
+  </div>
 
   <div id="startView">
     <div class="name">旅の軌跡</div>
@@ -256,6 +263,8 @@ function render(){
   $("startView").classList.toggle("hidden",!!t);
   $("tripView").classList.toggle("hidden",!t);
   $("sheet").classList.toggle("editor",!!t);
+  $("collapsedTripHeader").classList.toggle("hidden",!t);
+  $("collapsedTripName").textContent=t?t.name:"";
   if(t){
     $("tripName").textContent=t.name;
     $("tripDate").textContent=formatDates(t);
@@ -343,6 +352,12 @@ $("loc").onclick=()=>navigator.geolocation&&navigator.geolocation.getCurrentPosi
 $("makeBtn").onclick=openCreate;
 $("chooseBtn").onclick=openChoose;
 $("changeTripBtn").onclick=openChoose;
+$("collapsedTopBtn").onclick=()=>{
+  activeTripId=null;
+  saveActive();
+  render();
+  requestAnimationFrame(()=>setSheetShift(0,true));
+};
 $("saveTripBtn").onclick=createTrip;
 $("newTripFromListBtn").onclick=openCreate;
 
@@ -489,7 +504,7 @@ let lastPointerY=0,lastPointerTime=0,pointerVelocity=0;
 
 function collapsedSheetHeight(){
   // 下端ではシート本体をほぼ隠し、ハンドルだけを残す。
-  return 44;
+  return 82;
 }
 function sheetMaxShift(){
   if(!sheet.classList.contains("editor")) return 0;
@@ -502,7 +517,7 @@ function setSheetShift(v,animate=false){
   sheet.style.setProperty("--sheet-shift",sheetShift+"px");
 }
 function isInteractiveTarget(el){
-  return !!el.closest("button,a,input,select,textarea");
+  return !!el.closest("button,a,input,select,textarea") || !!el.closest(".collapsedTripHeader");
 }
 function beginSheetDrag(e){
   if(isInteractiveTarget(e.target)) return;
