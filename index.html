@@ -324,9 +324,9 @@ function refreshStartStatus(){
   const t=activeTrip();
   if(!t){$("startStatus").textContent="";return}
   $("startStatus").textContent=t.completed?"✓ この旅は保存されています。":(t.startPlace?"":"まだスタート地点が設定されていません。");
-  $("completeTripBtn").textContent=t.completed?"✓ 保存済み":"✓ この旅を保存して完了";
+  $("completeTripBtn").textContent=t.completed?"✓ 更新を保存":"✓ この旅を保存して完了";
   $("completeTripBtn").classList.toggle("saved",!!t.completed);
-  $("completeTripBtn").disabled=!!t.completed;
+  $("completeTripBtn").disabled=false;
   renderFlow();
 }
 
