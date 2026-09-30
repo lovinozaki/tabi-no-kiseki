@@ -13,7 +13,7 @@ html,body{margin:0;height:100%;font-family:-apple-system,BlinkMacSystemFont,"Hel
 .title,.btn{background:#fff;border:0;border-radius:15px;box-shadow:0 2px 14px #0002}
 .title{padding:10px 14px;font-weight:700}
 .btn{width:42px;height:42px;font-size:18px}
-.sheet{position:fixed;left:10px;right:10px;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);z-index:600;background:rgba(255,255,255,.97);backdrop-filter:blur(14px);border-radius:22px;padding:12px;box-shadow:0 5px 30px #0003;max-height:42dvh;overflow:auto;transform:translateY(var(--shift,0px));transition:transform .18s ease-out;touch-action:none}
+.sheet{position:fixed;left:10px;right:10px;bottom:10px;z-index:600;background:rgba(255,255,255,.96);backdrop-filter:blur(14px);border-radius:22px;padding:12px;box-shadow:0 5px 30px #0003;max-height:43vh;overflow:auto;transform:translateY(var(--sheet-shift,0px));transition:transform .18s ease-out;touch-action:none;will-change:transform;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 .sheet.dragging{transition:none}
 .handle{width:48px;height:22px;margin:-6px auto 4px;position:relative}
 .handle:after{content:"";position:absolute;left:5px;right:5px;top:8px;height:5px;background:#b9c0ca;border-radius:3px}
@@ -264,37 +264,57 @@ if(!activeTripId && trips.length===1){
 render();
 
 const sheet=$("sheet");
-let sy=0,ss=0,shift=0,drag=false,vy=0,ly=0,lt=0;
-
-function maxShift(){return Math.max(0,sheet.scrollHeight-56)}
-function applyShift(v){
-  shift=Math.max(0,Math.min(maxShift(),v));
-  sheet.style.setProperty("--shift",shift+"px");
+const handle=$(".handle");
+let sheetStartY=0,sheetStartShift=0,sheetShift=0,draggingSheet=false;
+function sheetMaxShift(){return Math.max(0,sheet.offsetHeight-48)}
+function setSheetShift(v,animate=false){
+  sheetShift=Math.max(0,Math.min(sheetMaxShift(),v));
+  if(animate) sheet.classList.remove("dragging"); else sheet.classList.add("dragging");
+  sheet.style.setProperty("--sheet-shift",sheetShift+"px");
 }
-function resetSheetToValidPosition(){applyShift(Math.min(shift,maxShift()))}
-function down(e){
-  if(e.target.closest("button,input,a"))return;
-  drag=true;sy=e.clientY;ss=shift;ly=e.clientY;lt=performance.now();vy=0;
-  sheet.classList.add("dragging");e.preventDefault();
+sheet.classList.add("gestureBoundary");
+if(window.L&&L.DomEvent){L.DomEvent.disableClickPropagation(sheet);L.DomEvent.disableScrollPropagation(sheet)}
+function isInteractiveTarget(el){return !!el?.closest("button, a, input, select, textarea")}
+let lastPointerY=0,lastPointerTime=0,pointerVelocity=0;
+function beginSheetDrag(e){
+  if(isInteractiveTarget(e.target))return;
+  if(e.pointerType==="mouse"&&e.button!==0)return;
+  draggingSheet=true;sheetStartY=e.clientY;sheetStartShift=sheetShift;
+  lastPointerY=e.clientY;lastPointerTime=performance.now();pointerVelocity=0;
+  sheet.classList.add("dragging");e.preventDefault();e.stopPropagation();
+  try{sheet.setPointerCapture(e.pointerId)}catch(_){}
 }
-function move(e){
-  if(!drag)return;
-  const now=performance.now(),dt=Math.max(8,now-lt);
-  vy=(e.clientY-ly)/dt;ly=e.clientY;lt=now;
-  applyShift(ss+e.clientY-sy);e.preventDefault();
+function moveSheetDrag(e){
+  if(!draggingSheet)return;
+  e.preventDefault();e.stopPropagation();
+  const now=performance.now(),dt=Math.max(8,now-lastPointerTime),dy=e.clientY-lastPointerY;
+  pointerVelocity=dy/dt;lastPointerY=e.clientY;lastPointerTime=now;
+  let next=sheetStartShift+(e.clientY-sheetStartY),max=sheetMaxShift();
+  if(next<0)next=next*.18;
+  if(next>max)next=max+(next-max)*.18;
+  setSheetShift(next,false);
 }
-function up(e){
-  if(!drag)return;
-  drag=false;sheet.classList.remove("dragging");
-  const m=maxShift();
-  applyShift(vy<-.45?0:vy>.45?m:shift<m/2?0:m);
-  if(e)e.preventDefault();
+function finishSheetDrag(e){
+  if(!draggingSheet)return;
+  if(e){e.preventDefault();e.stopPropagation();}
+  const max=sheetMaxShift();
+  let target;
+  if(pointerVelocity<-.45)target=0;
+  else if(pointerVelocity>.45)target=max;
+  else target=sheetShift<max/2?0:max;
+  draggingSheet=false;sheet.classList.remove("dragging");setSheetShift(target,true);
 }
-sheet.addEventListener("pointerdown",down,{passive:false});
-sheet.addEventListener("pointermove",move,{passive:false});
-sheet.addEventListener("pointerup",up,{passive:false});
-sheet.addEventListener("pointercancel",up,{passive:false});
-window.addEventListener("resize",()=>requestAnimationFrame(resetSheetToValidPosition));
+sheet.addEventListener("pointerdown",beginSheetDrag,{capture:true,passive:false});
+sheet.addEventListener("pointermove",moveSheetDrag,{capture:true,passive:false});
+sheet.addEventListener("pointerup",finishSheetDrag,{capture:true,passive:false});
+sheet.addEventListener("pointercancel",finishSheetDrag,{capture:true,passive:false});
+sheet.addEventListener("touchstart",e=>{if(isInteractiveTarget(e.target))return;e.stopPropagation()},{capture:true,passive:false});
+sheet.addEventListener("touchmove",e=>{if(draggingSheet){e.preventDefault();e.stopPropagation()}},{capture:true,passive:false});
+sheet.addEventListener("touchend",e=>{if(draggingSheet)e.stopPropagation()},{capture:true,passive:false});
+window.addEventListener("resize",()=>{
+  const max=sheetMaxShift();
+  setSheetShift(sheetShift<max/2?0:max,true);
+});
 </script>
 </body>
 </html>
