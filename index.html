@@ -25,6 +25,15 @@ html,body{margin:0;height:100%;font-family:-apple-system,BlinkMacSystemFont,"Hel
 .select{background:#eef3ff;color:#1769aa}
 .ghost{background:#f3f4f6;color:#4b5563}
 .status{font-size:13px;color:#69717d;margin-top:12px}
+.flow{margin-top:14px;padding:12px 13px;background:#f7f8fa;border-radius:16px}
+.flowTitle{font-size:13px;font-weight:700;margin-bottom:8px}
+.flowItem{display:flex;align-items:flex-start;gap:9px;font-size:14px}
+.flowDot{width:10px;height:10px;border-radius:50%;background:#1769aa;margin-top:5px;flex:0 0 auto}
+.flowText{font-weight:600}
+.flowMeta{font-size:11px;color:#69717d;margin-top:2px}
+.flowLine{width:2px;height:18px;background:#cbd2da;margin:2px 0 2px 4px}
+.complete{background:#17202a;color:#fff}
+.saved{background:#e9f5ec;color:#26733b}
 .modal{position:fixed;inset:0;z-index:900;background:#0006;display:none;align-items:flex-end}
 .modal.open{display:flex}
 .box{background:#fff;width:100%;border-radius:24px 24px 0 0;padding:20px;padding-bottom:calc(20px + env(safe-area-inset-bottom,0px));max-height:82dvh;overflow:auto}
@@ -59,7 +68,12 @@ html,body{margin:0;height:100%;font-family:-apple-system,BlinkMacSystemFont,"Hel
     <div class="sub" id="tripDate"></div>
     <div class="status">この旅を記録しています。</div>
     <button class="action create" id="setStartBtn">📍 スタート地点を設定</button>
+    <div class="flow" id="flow">
+      <div class="flowTitle">旅の流れ</div>
+      <div id="flowList"></div>
+    </div>
     <button class="action create" id="addPlaceBtn">＋ 行った場所を追加</button>
+    <button class="action complete" id="completeTripBtn">✓ この旅を保存して完了</button>
     <div class="status" id="startStatus"></div>
     <button class="action ghost" id="changeTripBtn">📖 別の旅を選択</button>
   </div>
@@ -154,10 +168,33 @@ function formatDates(t){
   return "日付未設定";
 }
 function activeTrip(){return trips.find(t=>t.id===activeTripId)||null}
+function renderFlow(){
+  const t=activeTrip();
+  const list=$("flowList");
+  if(!t){list.innerHTML="";return}
+  const items=[];
+  if(t.startPlace) items.push({type:"start",name:t.startPlace.name,meta:"スタート"});
+  (t.places||[]).forEach((p,i)=>items.push({type:"place",name:p.name,meta:i===0&&t.startPlace?"":"前の場所から "+modeLabel(p.mode)+(p.mode==="car"&&p.avoidTolls?"・有料道路なし":"")}));
+  if(!items.length){
+    list.innerHTML='<div class="small">まずスタート地点を設定してください。</div>';
+    return;
+  }
+  list.innerHTML=items.map((item,i)=>{
+    const line=i<items.length-1?'<div class="flowLine"></div>':'';
+    return '<div class="flowItem"><div class="flowDot"></div><div><div class="flowText">'+escapeHtml(item.name)+'</div><div class="flowMeta">'+escapeHtml(item.meta)+'</div></div></div>'+line;
+  }).join("");
+}
+function modeLabel(mode){
+  return ({car:"🚗 車",shinkansen:"🚅 新幹線",train:"🚃 電車",bus:"🚌 バス",walk:"🚶 徒歩",flight:"✈️ 飛行機"})[mode]||"移動";
+}
 function refreshStartStatus(){
   const t=activeTrip();
   if(!t){$("startStatus").textContent="";return}
-  $("startStatus").textContent=t.startPlace?"スタート： "+t.startPlace.name:"まだスタート地点が設定されていません。";
+  $("startStatus").textContent=t.completed?"✓ この旅は保存されています。":(t.startPlace?"":"まだスタート地点が設定されていません。");
+  $("completeTripBtn").textContent=t.completed?"✓ 保存済み":"✓ この旅を保存して完了";
+  $("completeTripBtn").classList.toggle("saved",!!t.completed);
+  $("completeTripBtn").disabled=!!t.completed;
+  renderFlow();
 }
 
 function render(){
@@ -219,7 +256,7 @@ function createTrip(){
   const start=$("inputStartDate").value;
   const end=$("inputEndDate").value;
   if(start&&end&&end<start){alert("終了日は開始日以降にしてください。");return}
-  const t={id:String(Date.now()),name,startDate:start,endDate:end,places:[]};
+  const t={id:String(Date.now()),name,startDate:start,endDate:end,places:[],completed:false};
   trips.push(t);
   saveTrips();
   activeTripId=t.id;
@@ -241,6 +278,7 @@ function savePlace(){
   $("placeNameInput").value="";
   $("avoidTolls").checked=false;
   $("placeModal").classList.remove("open");
+  refreshStartStatus();
 }
 
 $("loc").onclick=()=>navigator.geolocation&&navigator.geolocation.getCurrentPosition(
@@ -276,6 +314,14 @@ $("saveStartBtn").onclick=()=>{
   t.startPlace={name:name};
   saveTrips();
   $("startModal").classList.remove("open");
+  refreshStartStatus();
+};
+$("completeTripBtn").onclick=()=>{
+  const t=activeTrip();
+  if(!t)return;
+  if(!t.startPlace){alert("まずスタート地点を設定してください。");return}
+  t.completed=true;
+  saveTrips();
   refreshStartStatus();
 };
 $("addPlaceBtn").onclick=()=>$("placeModal").classList.add("open");
