@@ -58,7 +58,9 @@ html,body{margin:0;height:100%;font-family:-apple-system,BlinkMacSystemFont,"Hel
     <div class="name" id="tripName"></div>
     <div class="sub" id="tripDate"></div>
     <div class="status">この旅を記録しています。</div>
+    <button class="action create" id="setStartBtn">📍 スタート地点を設定</button>
     <button class="action create" id="addPlaceBtn">＋ 行った場所を追加</button>
+    <div class="status" id="startStatus"></div>
     <button class="action ghost" id="changeTripBtn">📖 別の旅を選択</button>
   </div>
 </div>
@@ -82,6 +84,16 @@ html,body{margin:0;height:100%;font-family:-apple-system,BlinkMacSystemFont,"Hel
       <div id="tripList"></div>
       <button class="action create" id="newTripFromListBtn">＋ 新しい旅を作成</button>
     </div>
+  </div>
+</div>
+
+<div class="modal" id="startModal">
+  <div class="box">
+    <button class="close" id="startClose">×</button>
+    <h2>スタート地点を設定</h2>
+    <div class="small">この旅は、どこから始まりましたか？</div>
+    <input class="input" id="startNameInput" placeholder="例：周南市下上、自宅、徳山駅">
+    <button class="primary" id="saveStartBtn">この場所をスタート地点にする</button>
   </div>
 </div>
 
@@ -142,6 +154,11 @@ function formatDates(t){
   return "日付未設定";
 }
 function activeTrip(){return trips.find(t=>t.id===activeTripId)||null}
+function refreshStartStatus(){
+  const t=activeTrip();
+  if(!t){$("startStatus").textContent="";return}
+  $("startStatus").textContent=t.startPlace?"スタート： "+t.startPlace.name:"まだスタート地点が設定されていません。";
+}
 
 function render(){
   const t=activeTrip();
@@ -151,6 +168,7 @@ function render(){
     $("tripName").textContent=t.name;
     $("tripDate").textContent=formatDates(t);
   }
+  refreshStartStatus();
   requestAnimationFrame(()=>{if(typeof sheetMaxShift==="function")setSheetShift(Math.min(sheetShift,sheetMaxShift()),true);});
 }
 
@@ -243,6 +261,23 @@ $("tripList").onclick=e=>{
 $("tripModalClose").onclick=closeTripModal;
 $("tripModal").onclick=e=>{if(e.target===$("tripModal"))closeTripModal()};
 
+$("setStartBtn").onclick=()=>{
+  const t=activeTrip();
+  $("startNameInput").value=t?.startPlace?.name||"";
+  $("startModal").classList.add("open");
+};
+$("startClose").onclick=()=>$("startModal").classList.remove("open");
+$("startModal").onclick=e=>{if(e.target===$("startModal"))$("startModal").classList.remove("open")};
+$("saveStartBtn").onclick=()=>{
+  const t=activeTrip();
+  if(!t)return;
+  const name=$("startNameInput").value.trim();
+  if(!name){$("startNameInput").focus();return}
+  t.startPlace={name:name};
+  saveTrips();
+  $("startModal").classList.remove("open");
+  refreshStartStatus();
+};
 $("addPlaceBtn").onclick=()=>$("placeModal").classList.add("open");
 $("placeClose").onclick=()=>$("placeModal").classList.remove("open");
 $("placeModal").onclick=e=>{if(e.target===$("placeModal"))$("placeModal").classList.remove("open")};
