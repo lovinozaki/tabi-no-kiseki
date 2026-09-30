@@ -10,7 +10,7 @@
 #map{position:fixed;inset:0;z-index:0}
 .top{position:fixed;top:12px;left:12px;right:12px;z-index:500;display:flex;justify-content:space-between;align-items:center;pointer-events:none}
 .title{background:rgba(255,255,255,.94);backdrop-filter:blur(10px);border-radius:16px;padding:10px 14px;font-weight:700;box-shadow:0 2px 14px #0002;pointer-events:auto}
-.actions{display:flex;gap:8px}.layerMenu{position:fixed;top:62px;right:12px;z-index:550;background:rgba(255,255,255,.97);backdrop-filter:blur(12px);border-radius:16px;padding:9px;box-shadow:0 4px 22px #0003;display:none;min-width:180px}.layerMenu.open{display:block}.layerTitle{font-size:12px;font-weight:700;color:#69717d;padding:3px 8px 7px}.layerChoice{display:block;width:100%;border:0;background:#fff;text-align:left;border-radius:11px;padding:10px 9px;font-size:13px}.layerChoice.active{background:#17202a;color:#fff}.layerNote{font-size:10px;color:#69717d;line-height:1.45;padding:8px 8px 2px}.btn{border:0;background:rgba(255,255,255,.95);width:42px;height:42px;border-radius:14px;box-shadow:0 2px 14px #0002;font-size:18px}
+.actions{display:flex;gap:8px}.layerMenu{position:fixed;top:62px;right:12px;z-index:550;background:rgba(255,255,255,.97);backdrop-filter:blur(12px);border-radius:16px;padding:9px;box-shadow:0 4px 22px #0003;display:none;min-width:180px}.layerMenu.open{display:block}.layerTitle{font-size:13px;font-weight:700;color:#69717d;padding:3px 8px 7px}.layerChoice{display:block;width:100%;border:0;background:#fff;text-align:left;border-radius:11px;padding:12px 10px;font-size:14px;min-height:44px}.layerChoice.active{background:#17202a;color:#fff}.layerNote{font-size:10px;color:#69717d;line-height:1.45;padding:8px 8px 2px}.btn{border:0;background:rgba(255,255,255,.95);width:42px;height:42px;border-radius:14px;box-shadow:0 2px 14px #0002;font-size:18px}
 .sheet{position:fixed;left:10px;right:10px;bottom:10px;z-index:600;background:rgba(255,255,255,.96);backdrop-filter:blur(14px);border-radius:22px;padding:12px;box-shadow:0 5px 30px #0003;max-height:43vh;overflow:auto;transform:translateY(var(--sheet-shift,0px));transition:transform .18s ease-out;touch-action:none;will-change:transform;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 .sheet.dragging{transition:none}.sheet.gestureBoundary{overscroll-behavior:none}
 .handle{width:48px;height:22px;background:transparent;border-radius:12px;margin:-6px auto 4px;cursor:grab;touch-action:none;position:relative}.handle:after{content:"";position:absolute;left:5px;right:5px;top:8px;height:5px;background:#b9c0ca;border-radius:3px}
@@ -468,14 +468,7 @@ document.getElementById('planRouteModalBtn').onclick=()=>{
   newTripModal.classList.add('open');
 };
 const layerMenu=document.getElementById('layerMenu');
-document.getElementById('layerBtn').onclick=()=>{
-  const wanted=currentBase==='standard'?'aerial':'standard';
-  const btn=document.querySelector('.layerChoice[data-layer="'+wanted+'"]');
-  if(btn) btn.click();
-  const layerBtn=document.getElementById('layerBtn');
-  layerBtn.textContent=currentBase==='aerial'?'🛰️':'🗺️';
-  layerBtn.title=currentBase==='aerial'?'標準地図に戻す':'航空写真に切り替える';
-};
+document.getElementById('layerBtn').onclick=()=>layerMenu.classList.toggle('open');
 document.querySelectorAll('.layerChoice').forEach(btn=>{
   btn.onclick=()=>{
     const wanted=btn.dataset.layer;
@@ -497,8 +490,8 @@ document.querySelectorAll('.layerChoice').forEach(btn=>{
     document.querySelectorAll('.layerChoice').forEach(x=>x.classList.toggle('active',x===btn));
     layerMenu.classList.remove('open');
     const layerBtn=document.getElementById('layerBtn');
-    layerBtn.textContent=currentBase==='aerial'?'🛰️':'🗺️';
-    layerBtn.title=currentBase==='aerial'?'標準地図に戻す':'航空写真に切り替える';
+    layerBtn.textContent='🗺️';
+    layerBtn.title='地図表示を選択';
   };
 });
 document.getElementById('locBtn').onclick=()=>{
