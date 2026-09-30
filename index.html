@@ -184,7 +184,7 @@ function renderTripList(){
     '<button class="row tripRow" data-trip-id="'+t.id+'">📖 '+escapeHtml(t.name)+'<div class="small">'+formatDates(t)+'</div></button>'
   ).join("");
 }
-function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",""":"&quot;","'":"&#39;"}[m]))}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]))}
 
 function selectTrip(id){
   const t=trips.find(x=>x.id===id);
