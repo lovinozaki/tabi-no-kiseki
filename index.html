@@ -370,6 +370,7 @@ function refreshStartStatus(){
 
 function render(){
   const t=activeTrip();
+  $("sheet").scrollLeft=0;
   $("startView").classList.toggle("hidden",!!t);
   $("tripView").classList.toggle("hidden",!t);
   $("sheet").classList.toggle("editor",!!t);
@@ -727,7 +728,7 @@ function normalizeSheetPosition(){
   sheet.classList.toggle("collapsed",max>0&&sheetShift>=max-2);
   sheet.style.setProperty("--sheet-shift",sheetShift+"px");
 }
-window.addEventListener("resize",()=>requestAnimationFrame(normalizeSheetPosition));
+window.addEventListener("resize",()=>requestAnimationFrame(()=>{sheet.scrollLeft=0;normalizeSheetPosition()}));
 window.addEventListener("orientationchange",()=>setTimeout(normalizeSheetPosition,120));
 requestAnimationFrame(normalizeSheetPosition);
 </script>
