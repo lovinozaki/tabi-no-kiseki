@@ -12,7 +12,7 @@
 .title{background:rgba(255,255,255,.94);backdrop-filter:blur(10px);border-radius:16px;padding:10px 14px;font-weight:700;box-shadow:0 2px 14px #0002;pointer-events:auto}
 .actions{display:flex;gap:8px}.btn{border:0;background:rgba(255,255,255,.95);width:42px;height:42px;border-radius:14px;box-shadow:0 2px 14px #0002;font-size:18px}
 .layerMenu{position:fixed;top:62px;right:12px;z-index:550;background:rgba(255,255,255,.97);backdrop-filter:blur(12px);border-radius:16px;padding:9px;box-shadow:0 4px 22px #0003;display:none;min-width:180px}.layerMenu.open{display:block}.layerTitle{font-size:13px;font-weight:700;color:#69717d;padding:3px 8px 7px}.layerChoice{display:block;width:100%;border:0;background:#fff;text-align:left;border-radius:11px;padding:12px 10px;font-size:14px;min-height:44px}.layerChoice.active{background:#17202a;color:#fff}
-.sheet{position:fixed;left:10px;right:10px;bottom:10px;z-index:600;background:rgba(255,255,255,.96);backdrop-filter:blur(14px);border-radius:22px;padding:12px;box-shadow:0 5px 30px #0003;max-height:43vh;overflow:auto;transform:translateY(var(--sheet-shift,0px));transition:transform .18s ease-out;touch-action:none;will-change:transform;overscroll-behavior:contain}
+.sheet{position:fixed;left:10px;right:10px;bottom:10px;z-index:600;background:rgba(255,255,255,.96);backdrop-filter:blur(14px);border-radius:22px;padding:12px;box-shadow:0 5px 30px #0003;max-height:38vh;overflow:auto;transform:translateY(var(--sheet-shift,0px));transition:transform .18s ease-out;touch-action:none;will-change:transform;overscroll-behavior:contain}
 .sheet.dragging{transition:none}.handle{width:48px;height:22px;background:transparent;border-radius:12px;margin:-6px auto 4px;position:relative}.handle:after{content:"";position:absolute;left:5px;right:5px;top:8px;height:5px;background:#b9c0ca;border-radius:3px}
 .triphead{display:flex;justify-content:space-between;gap:10px}.tripname{font-weight:700}.date{font-size:12px;color:#69717d;margin-top:4px}
 .badges{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap}.badge{font-size:12px;background:#f0f2f5;border-radius:10px;padding:5px 8px}
@@ -31,14 +31,14 @@
 <div class="top">
   <div class="title">旅の軌跡</div>
   <div class="actions">
-    <button class="btn" id="layerBtn" title="地図表示">🗺️</button>
+    
     <button class="btn" id="locBtn" title="現在地">◎</button>
   </div>
 </div>
-<div class="layerMenu" id="layerMenu">
+<div class="layerMenu" id="layerMenu" style="display:none">
   <div class="layerTitle">地図表示</div>
   <button class="layerChoice active" data-layer="standard">🗺️ 標準地図</button>
-  <button class="layerChoice" data-layer="aerial">🛰️ 航空写真</button>
+  
 </div>
 
 <div class="sheet">
@@ -47,12 +47,12 @@
     <div><div class="tripname" id="tripName">アラタF35岩国基地</div><div class="date" id="tripDate">2026年9月23日 ・ 記録帳</div></div>
     <div>🚗</div>
   </div>
-  <div class="badges"><span class="badge">📍 行った場所を点で記録</span><span class="badge">🛣️ 道は道路に沿って再現</span></div>
+  <div class="badges"><span class="badge">📍 場所</span><span class="badge">🛣️ 移動</span><span class="badge">📷 思い出</span></div>
   <div class="route">旅が終わってから、地図を見ながら思い出を辿って場所を追加します。追加した点と点の間は、道路ネットワークに沿った線として描きます。</div>
   <button class="addPlaceBtn" id="addPlaceBtn">＋ 行った場所を地図に追加</button>
-  <button class="googlebtn" id="googleSearchBtn">🔎 Googleマップで場所を調べる</button>
+  <button class="googlebtn" id="googleSearchBtn">🔎 Googleマップで場所を確認</button>
   <div class="placeList" id="placeList"></div>
-  <div class="notice" id="routeStatus">道路の線は、点を追加すると道路ネットワークから取得します。直線では代用しません。</div>
+  <div class="notice" id="routeStatus">場所を順番に追加すると、移動の線を再現します。道路ルートは現在、検証用の仕組みです。本番では利用条件を確認した無料・適法な方式だけを採用します。</div>
 </div>
 
 <div class="modal" id="placeModal">
@@ -92,7 +92,6 @@
 <script>
 const map=L.map('map',{zoomControl:false}).setView([33.95,131.25],8);
 const standard=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(map);
-const aerial=L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg',{minZoom:14,maxZoom:18,maxNativeZoom:18,attribution:'<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院・地理院タイル</a>'});
 let currentBase='standard';
 
 const samplePlaces=[
@@ -200,20 +199,6 @@ document.getElementById('locBtn').onclick=()=>{
   if(!navigator.geolocation){alert('この端末では現在地機能を利用できません。');return}
   navigator.geolocation.getCurrentPosition(p=>map.setView([p.coords.latitude,p.coords.longitude],14),()=>alert('現在地を取得できませんでした。'));
 };
-
-const layerMenu=document.getElementById('layerMenu');
-document.getElementById('layerBtn').onclick=()=>layerMenu.classList.toggle('open');
-document.querySelectorAll('.layerChoice').forEach(btn=>btn.onclick=()=>{
-  const wanted=btn.dataset.layer;
-  if(wanted==='aerial'){
-    map.removeLayer(standard);aerial.addTo(map);aerial.bringToFront();currentBase='aerial';
-    if(map.getZoom()<14)map.setZoom(14);
-  }else{
-    map.removeLayer(aerial);standard.addTo(map);standard.bringToFront();currentBase='standard';
-  }
-  document.querySelectorAll('.layerChoice').forEach(x=>x.classList.toggle('active',x===btn));
-  layerMenu.classList.remove('open');
-});
 
 const sheet=document.querySelector('.sheet'),handle=document.querySelector('.handle');
 let sheetShift=0,sheetStartY=0,sheetStartShift=0,dragging=false,lastY=0,lastT=0,velocity=0;
