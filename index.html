@@ -223,11 +223,28 @@ const sheet=document.querySelector('.sheet'),handle=document.querySelector('.han
 let sheetShift=0,sheetStartY=0,sheetStartShift=0,dragging=false,lastY=0,lastT=0,velocity=0;
 function maxShift(){return Math.max(0,sheet.offsetHeight-48)}
 function setShift(v,animate){const m=maxShift();sheetShift=Math.max(0,Math.min(m,v));sheet.style.setProperty('--sheet-shift',sheetShift+'px');if(animate)sheet.classList.remove('dragging');else sheet.classList.add('dragging')}
-function interactive(el){return !!el.closest('button,input,select,a')}
-function down(e){if(interactive(e.target))return;dragging=true;sheetStartY=e.clientY;sheetStartShift=sheetShift;lastY=e.clientY;lastT=performance.now();velocity=0;sheet.classList.add('dragging');e.preventDefault();try{sheet.setPointerCapture(e.pointerId)}catch(_){}}
-function move(e){if(!dragging)return;e.preventDefault();const n=performance.now(),dt=Math.max(8,n-lastT);velocity=(e.clientY-lastY)/dt;lastY=e.clientY;lastT=n;let v=sheetStartShift+(e.clientY-sheetStartY),m=maxShift();if(v<0)v*=.18;if(v>m)v=m+(v-m)*.18;setShift(v,false)}
-function up(e){if(!dragging)return;e.preventDefault();const m=maxShift();let target=velocity<-.45?0:velocity>.45?m:(sheetShift<m/2?0:m);dragging=false;setShift(target,true)}
-sheet.addEventListener('pointerdown',down,{capture:true,passive:false});sheet.addEventListener('pointermove',move,{capture:true,passive:false});sheet.addEventListener('pointerup',up,{capture:true,passive:false});sheet.addEventListener('pointercancel',up,{capture:true,passive:false});
+function down(e){
+  dragging=true;sheetStartY=e.clientY;sheetStartShift=sheetShift;lastY=e.clientY;lastT=performance.now();velocity=0;
+  sheet.classList.add('dragging');e.preventDefault();
+  try{handle.setPointerCapture(e.pointerId)}catch(_){}
+}
+function move(e){
+  if(!dragging)return;e.preventDefault();
+  const n=performance.now(),dt=Math.max(8,n-lastT);
+  velocity=(e.clientY-lastY)/dt;lastY=e.clientY;lastT=n;
+  let v=sheetStartShift+(e.clientY-sheetStartY),m=maxShift();
+  if(v<0)v*=.18;if(v>m)v=m+(v-m)*.18;setShift(v,false)
+}
+function up(e){
+  if(!dragging)return;e.preventDefault();
+  const m=maxShift();
+  let target=velocity<-.45?0:velocity>.45?m:(sheetShift<m/2?0:m);
+  dragging=false;setShift(target,true)
+}
+handle.addEventListener('pointerdown',down,{passive:false});
+handle.addEventListener('pointermove',move,{passive:false});
+handle.addEventListener('pointerup',up,{passive:false});
+handle.addEventListener('pointercancel',up,{passive:false});
 window.addEventListener('resize',()=>setShift(sheetShift<maxShift()/2?0:maxShift(),true));
 
 const tripModal=document.getElementById('tripModal');
