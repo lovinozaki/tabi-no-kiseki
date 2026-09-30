@@ -151,7 +151,7 @@ function render(){
     $("tripName").textContent=t.name;
     $("tripDate").textContent=formatDates(t);
   }
-  requestAnimationFrame(resetSheetToValidPosition);
+  requestAnimationFrame(()=>{if(typeof sheetMaxShift==="function")setSheetShift(Math.min(sheetShift,sheetMaxShift()),true);});
 }
 
 function openCreate(){
