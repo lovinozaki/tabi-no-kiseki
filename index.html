@@ -9,7 +9,7 @@
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;background:#f6f7f9;color:#17202a}
 #map{position:absolute;inset:0}
-.top{position:absolute;top:64px;left:78px;right:16px;height:42px;z-index:500;display:flex;justify-content:space-between;align-items:center;flex-wrap:nowrap}
+.top{position:absolute;top:64px;left:78px;right:42px;height:42px;z-index:500;display:flex;justify-content:space-between;align-items:center;flex-wrap:nowrap}
 .title,.btn{background:#fff;border:0;border-radius:15px;box-shadow:0 2px 14px #0002}
 .title{padding:10px 14px;font-weight:700}
 .btn{width:42px;height:42px;font-size:18px}
@@ -64,7 +64,7 @@ html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;font-fam
 </head>
 <body>
 <div id="map"></div>
-<div class="top"><div class="title">旅の軌跡</div><button class="btn" id="loc">◎</button></div>
+<div class="top"><div class="title" style="display:none">旅の軌跡</div><button class="btn" id="loc">◎</button></div>
 
 <div class="sheet" id="sheet">
   <div class="handle"></div>
