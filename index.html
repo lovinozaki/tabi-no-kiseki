@@ -38,7 +38,9 @@ html,body{margin:0;height:100%;font-family:-apple-system,BlinkMacSystemFont,"Hel
 .flowDot{width:10px;height:10px;border-radius:50%;background:#1769aa;margin-top:5px;flex:0 0 auto}
 .flowText{font-weight:600}
 .flowMeta{font-size:11px;color:#69717d;margin-top:2px}
-.flowLine{width:2px;height:18px;background:#cbd2da;margin:2px 0 2px 4px}
+.flowLine{position:relative;display:flex;align-items:center;min-height:42px;margin-left:4px}
+.flowLine:before{content:"";width:2px;height:42px;background:#cbd2da;position:absolute;left:0;top:0}
+.flowMode{position:relative;margin-left:14px;padding:5px 10px;background:#eef4ff;border-radius:10px;font-size:12px;font-weight:600;color:#1769aa;z-index:1}
 .complete{background:#17202a;color:#fff}
 .saved{background:#e9f5ec;color:#26733b}
 .modal{position:fixed;inset:0;z-index:900;background:#0006;display:none;align-items:flex-end}
@@ -208,24 +210,33 @@ function renderFlow(){
   const t=activeTrip();
   const list=$("flowList");
   if(!t){list.innerHTML="";return}
+
+  const places=t.places||[];
   const items=[];
-  if(t.startPlace) items.push({type:"start",name:t.startPlace.name,meta:"スタート",index:-1});
-  (t.places||[]).forEach((p,i)=>items.push({
-    type:"place",name:p.name,
-    meta:"前の場所から "+modeLabel(p.mode)+(p.mode==="car"&&p.avoidTolls?"・有料道路なし":""),
-    index:i
-  }));
+  if(t.startPlace) items.push({type:"start",name:t.startPlace.name,index:-1});
+  places.forEach((p,i)=>items.push({type:"place",name:p.name,index:i,mode:p.mode,avoidTolls:p.avoidTolls}));
+
   if(!items.length){
     list.innerHTML='<div class="small">まずスタート地点を設定してください。</div>';
     return;
   }
-  list.innerHTML=items.map((item,i)=>{
-    const line=i<items.length-1?'<div class="flowLine"></div>':'';
+
+  let html="";
+  items.forEach((item,i)=>{
+    if(i>0){
+      const mode=items[i].mode;
+      const toll=(mode==="car"&&items[i].avoidTolls)?"・有料道路なし":"";
+      html+='<div class="flowLine"><div class="flowMode">'+escapeHtml(modeLabel(mode))+escapeHtml(toll)+'</div></div>';
+    }
+
     const actions=item.type==="place"
       ?'<div class="flowActions"><button class="mini" data-edit-place="'+item.index+'">変更</button><button class="mini danger" data-delete-place="'+item.index+'">削除</button></div>'
       :'';
-    return '<div class="flowItem"><div class="flowDot"></div><div class="flowMain"><div class="flowText">'+escapeHtml(item.name)+'</div><div class="flowMeta">'+escapeHtml(item.meta)+'</div>'+actions+'</div></div>'+line;
-  }).join("");
+
+    html+='<div class="flowItem"><div class="flowDot"></div><div class="flowMain"><div class="flowText">'+escapeHtml(item.name)+'</div><div class="flowMeta">'+(item.type==="start"?"スタート":"")+'</div>'+actions+'</div></div>';
+  });
+
+  list.innerHTML=html;
 }
 function modeLabel(mode){
   return ({car:"車",shinkansen:"新幹線",train:"電車",bus:"バス",walk:"徒歩",flight:"飛行機"})[mode]||"移動";
