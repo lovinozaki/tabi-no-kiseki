@@ -276,7 +276,7 @@ window.addEventListener('resize',()=>{
 
 const map=L.map('map',{zoomControl:false}).setView([33.55,131.10],9);
 const standard=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'});
-const aerial=L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg',{minZoom:14,maxZoom:18,attribution:'<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院・地理院タイル</a>'});
+const aerial=L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg',{minZoom:14,maxZoom:18,maxNativeZoom:18,opacity:1,attribution:'<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院・地理院タイル</a>'});
 standard.addTo(map);
 let currentBase='standard';
 
@@ -476,12 +476,16 @@ document.querySelectorAll('.layerChoice').forEach(btn=>{
     if(wanted==='aerial'){
       map.removeLayer(standard);
       aerial.addTo(map);
+      aerial.bringToFront();
       currentBase='aerial';
       if(map.getZoom()<14) map.setZoom(14);
+      setTimeout(()=>map.invalidateSize(),50);
     }else{
       map.removeLayer(aerial);
       standard.addTo(map);
+      standard.bringToFront();
       currentBase='standard';
+      setTimeout(()=>map.invalidateSize(),50);
     }
     document.querySelectorAll('.layerChoice').forEach(x=>x.classList.toggle('active',x===btn));
     layerMenu.classList.remove('open');
