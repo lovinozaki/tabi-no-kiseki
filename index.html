@@ -13,7 +13,7 @@ html,body{margin:0;height:100%;font-family:-apple-system,BlinkMacSystemFont,"Hel
 .title,.btn{background:#fff;border:0;border-radius:15px;box-shadow:0 2px 14px #0002}
 .title{padding:10px 14px;font-weight:700}
 .btn{width:42px;height:42px;font-size:18px}
-.sheet{position:fixed;left:10px;right:10px;bottom:10px;z-index:600;background:rgba(255,255,255,.96);backdrop-filter:blur(14px);border-radius:22px;padding:12px;box-shadow:0 5px 30px #0003;max-height:43vh;overflow:auto;transform:translateY(var(--sheet-shift,0px));transition:transform .18s ease-out;touch-action:none;will-change:transform;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.sheet{position:fixed;left:10px;right:10px;bottom:10px;z-index:600;background:rgba(255,255,255,.96);backdrop-filter:blur(14px);border-radius:22px;padding:12px;box-shadow:0 5px 30px #0003;max-height:66dvh;overflow:auto;transform:translate3d(0,var(--sheet-shift,0px),0);transition:transform .18s ease-out;touch-action:none;will-change:transform;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 .sheet.dragging{transition:none}
 .handle{width:48px;height:22px;margin:-6px auto 4px;position:relative}
 .handle:after{content:"";position:absolute;left:5px;right:5px;top:8px;height:5px;background:#b9c0ca;border-radius:3px}
@@ -475,10 +475,13 @@ let sheetStartY=0,sheetStartShift=0,sheetShift=0,draggingSheet=false;
 let lastPointerY=0,lastPointerTime=0,pointerVelocity=0;
 
 function sheetMaxShift(){
-  return Math.max(0,sheet.offsetHeight-48);
+  const viewport=Math.max(document.documentElement.clientHeight,window.innerHeight||0);
+  const visible=Math.min(sheet.scrollHeight,Math.floor(viewport*0.66));
+  return Math.max(0,sheet.scrollHeight-visible);
 }
 function setSheetShift(v,animate=false){
-  sheetShift=Math.max(0,Math.min(sheetMaxShift(),v));
+  const max=sheetMaxShift();
+  sheetShift=Math.max(0,Math.min(max,v));
   sheet.classList.toggle("dragging",!animate);
   sheet.style.setProperty("--sheet-shift",sheetShift+"px");
 }
@@ -488,67 +491,58 @@ function isInteractiveTarget(el){
 function beginSheetDrag(e){
   if(isInteractiveTarget(e.target)) return;
   if(e.pointerType==="mouse" && e.button!==0) return;
-
   draggingSheet=true;
   sheetStartY=e.clientY;
   sheetStartShift=sheetShift;
   lastPointerY=e.clientY;
   lastPointerTime=performance.now();
   pointerVelocity=0;
-
   sheet.classList.add("dragging");
   try{sheet.setPointerCapture(e.pointerId)}catch(_){}
   e.preventDefault();
 }
 function moveSheetDrag(e){
-  if(!draggingSheet) return;
-
+  if(!draggingSheet)return;
   const now=performance.now();
   const dt=Math.max(8,now-lastPointerTime);
   const dy=e.clientY-lastPointerY;
-
   pointerVelocity=dy/dt;
   lastPointerY=e.clientY;
   lastPointerTime=now;
-
   let next=sheetStartShift+(e.clientY-sheetStartY);
   const max=sheetMaxShift();
-
-  if(next<0) next*=0.18;
-  if(next>max) next=max+(next-max)*0.18;
-
+  if(next<0)next*=.18;
+  if(next>max)next=max+(next-max)*.18;
   setSheetShift(next,false);
   e.preventDefault();
 }
 function finishSheetDrag(e){
-  if(!draggingSheet) return;
-
+  if(!draggingSheet)return;
   const max=sheetMaxShift();
   let target;
-
-  if(pointerVelocity < -0.45) target=0;
-  else if(pointerVelocity > 0.45) target=max;
-  else target=sheetShift < max/2 ? 0 : max;
-
+  if(pointerVelocity<-.45)target=0;
+  else if(pointerVelocity>.45)target=max;
+  else target=sheetShift<max/2?0:max;
   draggingSheet=false;
   sheet.classList.remove("dragging");
   setSheetShift(target,true);
-
   try{sheet.releasePointerCapture(e.pointerId)}catch(_){}
   e.preventDefault();
 }
-
 sheet.addEventListener("pointerdown",beginSheetDrag,{passive:false});
 sheet.addEventListener("pointermove",moveSheetDrag,{passive:false});
 sheet.addEventListener("pointerup",finishSheetDrag,{passive:false});
 sheet.addEventListener("pointercancel",finishSheetDrag,{passive:false});
 
-window.addEventListener("resize",()=>{
-  requestAnimationFrame(()=>{
-    const max=sheetMaxShift();
-    setSheetShift(sheetShift < max/2 ? 0 : max,true);
-  });
-});
+function normalizeSheetPosition(){
+  const max=sheetMaxShift();
+  sheetShift=Math.max(0,Math.min(max,sheetShift));
+  sheet.style.setProperty("--sheet-shift",sheetShift+"px");
+}
+window.addEventListener("resize",()=>requestAnimationFrame(normalizeSheetPosition));
+window.addEventListener("orientationchange",()=>setTimeout(normalizeSheetPosition,120));
+requestAnimationFrame(normalizeSheetPosition);
+
 </script>
 </body>
 </html>
