@@ -137,7 +137,8 @@ html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;font-fam
     <button class="close" id="startClose">×</button>
     <h2>スタート地点を設定</h2>
     <div class="small">この旅は、どこから始まりましたか？</div>
-    <input class="input" id="startNameInput" placeholder="例：周南市下上、自宅、徳山駅">
+    <input class="input" id="startNameInput" list="startCandidates" autocomplete="off" placeholder="例：周南市下上、自宅、徳山駅">
+    <datalist id="startCandidates"></datalist>
     <button class="primary" id="saveStartBtn">この場所をスタート地点にする</button>
     <button class="action deleteTrip" id="deleteStartBtn">🗑 スタート地点を削除</button>
   </div>
@@ -174,7 +175,9 @@ html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;font-fam
     <button class="close" id="placeClose">×</button>
     <h2>行った場所を追加</h2>
     <div class="small">場所の名前</div>
-    <input class="input" id="placeNameInput" placeholder="例：岩国基地、錦帯橋">
+    <input class="input" id="placeNameInput" list="placeCandidates" autocomplete="off" placeholder="例：岩国基地、錦帯橋">
+    <datalist id="placeCandidates"></datalist>
+    <div class="small" id="placeCandidateHint">候補から選ぶこともできます。</div>
 
     <div class="small">前の場所からの移動方法</div>
     <div class="modeWrap">
@@ -206,6 +209,7 @@ const $=id=>document.getElementById(id);
 const tripsKey="tabiNoKisekiTrips_v2";
 const activeKey="tabiNoKisekiActiveTripId_v2";
 
+const placeCandidates=["徳山駅","新山口駅","新下関駅","小倉駅","博多駅","福岡駅","新鳥栖駅","久留米駅","熊本駅","新八代駅","新水俣駅","鹿児島中央駅","指宿駅","岩国駅","広島駅","宮島口駅","錦帯橋","岩国基地","山口宇部空港","福岡空港","熊本城","阿蘇","別府駅","大分駅","宮崎駅","宮崎空港駅","霧島神宮駅","指宿温泉"];
 const stationCoords={
   "徳山駅":[34.0510,131.8060],
   "新山口駅":[34.0948,131.3987],
@@ -404,6 +408,13 @@ function createTrip(){
   render();
 }
 
+function updatePlaceCandidates(){
+  const input=$("placeNameInput"),list=$("placeCandidates");
+  const q=String(input.value||"").trim();
+  const matches=placeCandidates.filter(name=>!q||name.includes(q)).slice(0,8);
+  list.innerHTML=matches.map(name=>"<option value=\""+escapeHtml(name)+"\"></option>").join("");
+  $("placeCandidateHint").textContent=matches.length?(q?"候補を表示しています。":"候補から選ぶこともできます。"):"候補はありません。場所名をそのまま入力できます。";
+}
 function savePlace(){
   const t=activeTrip();
   if(!t)return;
@@ -541,6 +552,11 @@ $("deleteTripBtn").onclick=()=>{
   render();
 };
 
+$("startNameInput").addEventListener("input",()=>{
+  const q=String($("startNameInput").value||"").trim();
+  const matches=placeCandidates.filter(name=>!q||name.includes(q)).slice(0,8);
+  $("startCandidates").innerHTML=matches.map(name=>"<option value=\""+escapeHtml(name)+"\"></option>").join("");
+});
 $("setStartBtn").onclick=()=>{
   const t=activeTrip();
   $("startNameInput").value=t?.startPlace?.name||"";
@@ -575,7 +591,8 @@ $("completeTripBtn").onclick=()=>{
   saveTrips();
   refreshStartStatus();
 };
-$("addPlaceBtn").onclick=()=>$("placeModal").classList.add("open");
+$("addPlaceBtn").onclick=()=>{updatePlaceCandidates();$("placeModal").classList.add("open");};
+$("placeNameInput").addEventListener("input",updatePlaceCandidates);
 $("placeClose").onclick=()=>$("placeModal").classList.remove("open");
 $("placeModal").onclick=e=>{if(e.target===$("placeModal"))$("placeModal").classList.remove("open")};
 document.querySelectorAll(".mode").forEach(btn=>btn.onclick=()=>{
@@ -588,6 +605,7 @@ document.querySelectorAll(".mode").forEach(btn=>btn.onclick=()=>{
 });
 $("savePlaceBtn").onclick=savePlace;
 
+$("startCandidates").innerHTML=placeCandidates.slice(0,8).map(name=>"<option value=\""+escapeHtml(name)+"\"></option>").join("");
 loadTrips();
 if(!activeTripId && trips.length===1){
   activeTripId=trips[0].id;
