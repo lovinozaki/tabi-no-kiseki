@@ -280,6 +280,36 @@ let activeTripId=localStorage.getItem(activeKey)||null;
 let selectedMode="car";
 let editingPlaceIndex=-1;
 
+function seedFujiMission(){
+  if(trips.some(t=>t.name==="富士攻略作戦")) return;
+  const t={
+    id:"fuji-koryaku-2026",
+    name:"富士攻略作戦",
+    startDate:"",
+    endDate:"",
+    purpose:"富士山で「納得できる景色」を見る。天候や富士山の見え方を優先し、条件が良ければ予定を変更してでも景色を取りに行く旅。",
+    planningNotes:[
+      "天候優先",
+      "富士山の見え方を優先",
+      "河口湖と山中湖のうち、その時点で条件の良い方を選ぶ",
+      "できれば逆さ富士を狙う",
+      "予定を固定せず、ライブカメラ等を見ながら判断する"
+    ],
+    candidatePlaces:[
+      "ニューオータニイン横浜プレミアム","桜木町","川崎","立川","富士吉田",
+      "河口湖","山中湖","富士河口湖リゾートホテル","ふじ鏡池","大石公園",
+      "長崎公園","平野湖畔","忍野八海"
+    ],
+    actualConfirmed:false,
+    completed:false,
+    places:[],
+    importedFrom:"旅ロビン副長",
+    importStatus:"計画データ。実際の訪問地点・ルートは未確定。"
+  };
+  trips.push(t);
+  saveTrips();
+}
+
 function loadTrips(){
   try{trips=JSON.parse(localStorage.getItem(tripsKey)||"[]")}catch(e){trips=[]}
   if(activeTripId && !trips.some(t=>t.id===activeTripId)) activeTripId=null;
