@@ -119,8 +119,11 @@ const map=L.map("map").setView([33.95,131.25],8);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap contributors"}).addTo(map);
 
 const $=id=>document.getElementById(id);
-const tripsKey="tabiNoKisekiTrips";
-const activeKey="tabiNoKisekiActiveTripId";
+const tripsKey="tabiNoKisekiTrips_v2";
+const activeKey="tabiNoKisekiActiveTripId_v2";
+// これまでのテスト用「新たな旅」データは、この新しいスタート版では引き継がない。
+localStorage.removeItem("tabiNoKisekiTrips");
+localStorage.removeItem("tabiNoKisekiActiveTripId");
 
 let trips=[];
 let activeTripId=localStorage.getItem(activeKey)||null;
